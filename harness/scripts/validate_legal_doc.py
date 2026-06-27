@@ -313,6 +313,7 @@ def main():
                 f"  L{f['line']}: [{f['rule']}] \"{f['match']}\" → {f['fix']}"
             )
         print('\n'.join(report_lines), file=sys.stderr)
+        sys.exit(2)
 
     sys.exit(0)
 

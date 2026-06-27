@@ -45,6 +45,11 @@
             "type": "command",
             "command": "cd /home/scouter/testff && python harness/scripts/validate_layer3.py .",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_doc_content.py .",
+            "timeout": 30
           }
         ]
       }

@@ -4,12 +4,15 @@
 법리그래프_*.md 파일이 Write/Edit될 때 PostToolUse hook으로
 실행된다. 그래프 파일의 JSON을 파싱하고,
 01_법리_데이터베이스.md에서 각 법리의 연관 법리·적용 사례를
-추출하여 독립 평가 프롬프트를 stderr에 출력한다. exit 2로
-모델 재진입을 유발하면, 재진입한 모델이 신선한 컨텍스트에서
-그래프의 법리 선택·포섭·전략을 독립적으로 평가한다.
+추출하여 독립 평가 프롬프트를 구성한다.
 
-그래프 파일에 '내용 평가: pass'가 있으면 이미 평가 완료로
-간주하여 즉시 종료한다(토큰 소모 0).
+exit 2로 모델 재진입을 유발하되, 메인 에이전트에게 Agent 도구로
+서브에이전트를 생성하여 독립 평가를 수행하도록 지시한다.
+서브에이전트는 메인 대화의 컨텍스트를 공유하지 않으므로
+확증 편향 없는 평가가 가능하다.
+
+already_passed 판정은 엄격한 정규식과 JSON 해시로 수행한다.
+그래프 JSON이 변경되면 기존 pass 기록을 무시하고 재평가한다.
 
 PostToolUse hook이므로, stdin의 tool_input.file_path에
 '법리그래프_'가 포함된 경우에만 실행하고 아니면 즉시 exit 0.
@@ -23,6 +26,7 @@ import os
 import re
 import json
 import glob
+import hashlib
 
 
 def find_recent_graph(project_dir):
@@ -45,24 +49,38 @@ def find_recent_graph(project_dir):
     return candidates[0][1]
 
 
+def compute_json_hash(json_text):
+    return hashlib.sha256(json_text.strip().encode()).hexdigest()[:12]
+
+
 def parse_graph_json(graph_path):
     try:
         with open(graph_path, 'r', encoding='utf-8') as f:
             text = f.read()
     except (FileNotFoundError, UnicodeDecodeError):
-        return None, None
-
-    if '내용 평가' in text and 'pass' in text.split('내용 평가')[-1].split('\n')[0]:
-        return None, 'already_passed'
+        return None, None, None
 
     m = re.search(r'```json\s*\n(.*?)\n```', text, re.DOTALL)
     if not m:
-        return None, None
+        return None, None, None
+
+    json_text = m.group(1)
+    current_hash = compute_json_hash(json_text)
+
+    pass_match = re.search(
+        r'-\s*(?:내용\s*평가\(C\)|Phase\s*2[^:]*?):\s*pass\s*\(hash:\s*([a-f0-9]+)\)',
+        text
+    )
+    if pass_match:
+        recorded_hash = pass_match.group(1)
+        if recorded_hash == current_hash:
+            return None, 'already_passed', None
+        # hash 불일치 또는 미기록: 그래프 변경됨, 재평가 필요
 
     try:
-        return json.loads(m.group(1)), None
+        return json.loads(json_text), None, current_hash
     except json.JSONDecodeError:
-        return None, None
+        return None, None, None
 
 
 def extract_doctrine_context(harness_dir, codes):
@@ -107,11 +125,40 @@ def extract_doctrine_context(harness_dir, codes):
     return result
 
 
-def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path):
-    lines = []
-    lines.append('[법리 그래프 내용 평가] 아래 그래프의 법리 선택·포섭·전략을 독립 평가하십시오.')
-    lines.append('')
+def find_progress_log(graph_path):
+    directory = os.path.dirname(os.path.abspath(graph_path))
+    for _ in range(3):
+        for p in glob.glob(os.path.join(directory, '진행로그_*.md')):
+            return p
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            break
+        directory = parent
+    return None
 
+
+def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path, json_hash):
+    progress_log = find_progress_log(graph_path)
+
+    lines = [
+        '[법리 그래프 내용 평가 — 서브에이전트 독립 검증 필요]',
+        '',
+        'Phase 1 스크립트 검증을 통과하였습니다.',
+        'Agent 도구로 서브에이전트를 생성하여 독립 평가를 수행하십시오.',
+        '',
+        '서브에이전트 프롬프트:',
+        '---',
+        f'법리 그래프의 법리 선택·포섭·전략을 독립 평가하라.',
+        '',
+        f'1. Read 도구로 그래프 파일을 읽어라: {graph_path}',
+    ]
+    if progress_log:
+        lines.append(
+            f'2. Read 도구로 진행 로그(5단계 쟁점 목록 포함)를 읽어라: '
+            f'{progress_log}'
+        )
+
+    lines.append('')
     lines.append('그래프 요약:')
     for issue in graph_data.get('issues', []):
         title = issue.get('title', '?')
@@ -121,7 +168,6 @@ def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path):
             for d in doctrines
         )
         lines.append(f"  쟁점 {issue.get('id', '?')}: {title} -> {codes_str}")
-
         for d in doctrines:
             sub = d.get('subsumption', '')
             if sub:
@@ -133,31 +179,37 @@ def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path):
         name = ctx.get('name', '')
         related = ctx.get('related', '-')
         usage = ctx.get('usage', '-')
+        basis = ctx.get('basis', '-')
         lines.append(f"  {code} ({name})")
+        lines.append(f"    근거 법조항: {basis}")
         lines.append(f"    연관 법리: {related}")
         lines.append(f"    적용 사례: {usage}")
 
-    all_codes = set()
-    for issue in graph_data.get('issues', []):
-        for d in issue.get('doctrines', []):
-            all_codes.add(d.get('code', ''))
-            related_str = doctrine_ctx.get(d.get('code', ''), {}).get('related', '')
-            if related_str:
-                for r in re.findall(r'[A-Z]+-\d+(?:-[A-Z])?', related_str):
-                    if r not in all_codes and r in doctrine_ctx:
-                        pass
-
-    lines.append('')
-    lines.append('평가 기준 (미충족 시 구체적으로 지적):')
-    lines.append('  (1) 각 쟁점의 주 법리가 해당 쟁점의 핵심 논점에 가장 적합한가')
-    lines.append('  (2) 보강·기반 법리가 주 법리의 논증을 실질적으로 강화하는가')
-    lines.append('  (3) 포섭이 사실관계를 정확히 반영하며 과소·과대 서술이 없는가')
-    lines.append('  (4) 법리DB에서 이 사건에 적용 가능하나 그래프에 누락된 법리가 있는가')
-    lines.append(f'     (연관 법리 필드를 참조하여 확인)')
-    lines.append('  (5) 적용 사례 필드의 선례와 비교하여 이 사건에서의 적용이 적절한가')
-    lines.append('')
-    lines.append(f'평가 완료 후 {os.path.basename(graph_path)}의 검증 이력에')
-    lines.append('"내용 평가: pass" 또는 "내용 평가: fail → [수정 내용]"을 기록하십시오.')
+    lines.extend([
+        '',
+        '평가 기준 (미충족 시 구체적으로 지적):',
+        '  (1) 쟁점-법리 대응 완전성: 모든 쟁점에 주 법리 배치. '
+        '답변서 각 주장에 대응 법리 존재',
+        '  (2) 법리 선택 적합성: 주 법리가 핵심 논점에 가장 적합한가',
+        '  (3) 법리 연결 정합성: 주→보강→기반 계층 적절. '
+        '법리DB 연관 법리와 모순 없음',
+        '  (4) 보강·기반 실질적 강화: 주 법리를 실질적으로 강화하는가',
+        '  (5) 포섭 적합성: 사실관계 정확 반영. 과소·과대 서술 없음',
+        '  (6) 논증 순서: 처분성/적법→본안→절차→부분공개. '
+        '읽는 흐름 자연스러움',
+        '  (7) 역이용 위험: 상대방 역이용 가능 구조 없음',
+        '  (8) 법리DB 누락: 연관 법리 중 적용 가능하나 미포함 법리',
+        '',
+        '결과를 JSON으로 반환하라:',
+        '{"pass": true/false, "findings": ['
+        '{"criterion": 1~8, "status": "pass"/"fail", "detail": "..."}]}',
+        '---',
+        '',
+        f'서브에이전트 결과에 따라 {os.path.basename(graph_path)}의 검증 이력에',
+        f'"- Phase 2 (내용 평가): pass (hash: {json_hash})" 또는',
+        f'"- Phase 2 (내용 평가): fail → [수정 내용]"을 기록하십시오.',
+        'pass 시 반드시 hash를 포함해야 이후 턴에서 재평가를 스킵합니다.',
+    ])
 
     return '\n'.join(lines)
 
@@ -181,7 +233,7 @@ def main():
     if not graph_path:
         sys.exit(0)
 
-    graph_data, status = parse_graph_json(graph_path)
+    graph_data, status, json_hash = parse_graph_json(graph_path)
     if status == 'already_passed':
         sys.exit(0)
     if graph_data is None:
@@ -205,7 +257,7 @@ def main():
     harness_dir = os.path.join(project_dir, 'harness')
     doctrine_ctx = extract_doctrine_context(harness_dir, codes)
 
-    prompt = build_evaluation_prompt(graph_data, doctrine_ctx, graph_path)
+    prompt = build_evaluation_prompt(graph_data, doctrine_ctx, graph_path, json_hash)
 
     print(prompt, file=sys.stderr)
     sys.exit(2)

@@ -306,7 +306,8 @@ def main():
         if stdin_data.strip():
             data = json.loads(stdin_data)
             fp = data.get('tool_input', {}).get('file_path', '')
-            if 'cases/' not in fp or not fp.endswith('.txt'):
+            _, ext = os.path.splitext(fp)
+            if 'cases/' not in fp or ext.lower() not in ('.txt', '.typ'):
                 sys.exit(0)
             target_from_stdin = fp
     except (json.JSONDecodeError, KeyError, TypeError):
@@ -364,9 +365,49 @@ def main():
                 )
 
         reason = '\n'.join(report_lines)
-        # Stop hook: exit 2 = block (자기수정 루프 작동)
+
+        counter_dir = os.path.join(project_dir, '.claude', 'hook_state')
+        os.makedirs(counter_dir, exist_ok=True)
+        counter_file = os.path.join(
+            counter_dir,
+            f"citations_block_{os.path.basename(file_path)}.count"
+        )
+        block_count = 0
+        try:
+            with open(counter_file, 'r') as cf:
+                block_count = int(cf.read().strip())
+        except (FileNotFoundError, ValueError):
+            pass
+
+        block_count += 1
+
+        if block_count >= 8:
+            print(
+                f"{reason}\n\n[자동 override] 8회 연속 차단. "
+                "수동 확인 후 진행하십시오.",
+                file=sys.stderr
+            )
+            try:
+                os.remove(counter_file)
+            except OSError:
+                pass
+            sys.exit(0)
+
+        with open(counter_file, 'w') as cf:
+            cf.write(str(block_count))
+
         print(reason, file=sys.stderr)
         sys.exit(2)
+
+    counter_dir = os.path.join(project_dir, '.claude', 'hook_state')
+    counter_file = os.path.join(
+        counter_dir,
+        f"citations_block_{os.path.basename(file_path)}.count"
+    )
+    try:
+        os.remove(counter_file)
+    except (FileNotFoundError, OSError):
+        pass
 
     sys.exit(0)
 

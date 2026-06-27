@@ -192,15 +192,15 @@ def check_cross_references(harness_dir):
 
 
 def main():
-    tool_input = os.environ.get('TOOL_INPUT')
-    if tool_input:
-        try:
-            data = json.loads(tool_input)
-            file_path = data.get('file_path', '')
+    try:
+        stdin_data = sys.stdin.read()
+        if stdin_data.strip():
+            data = json.loads(stdin_data)
+            file_path = data.get('tool_input', {}).get('file_path', '')
             if 'harness/' not in file_path:
                 sys.exit(0)
-        except (json.JSONDecodeError, KeyError, TypeError):
-            sys.exit(0)
+    except (json.JSONDecodeError, KeyError, TypeError):
+        sys.exit(0)
 
     harness_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.getcwd(), 'harness')
 

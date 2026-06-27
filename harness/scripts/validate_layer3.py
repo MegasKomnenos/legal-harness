@@ -109,7 +109,7 @@ def check_passive_paragraphs(text):
     active_indicators = [
         r'왜냐하면',
         r'그\s*이유는',
-        r'구체적으로',
+        r'구체적으로(?!\s*\n?\s*(?:제시|밝히|입증|소명|설명)\s*(?:하지|못))',
         r'청구인이\s*요청한\s*정보는',
         r'청구\s*대상.*성격',
         r'비식별',
@@ -199,6 +199,19 @@ def check_irac_completeness(text):
             r'주시기\s*바랍니다|동의합니다|무방합니다|안내하여)',
             sec['text']
         ))
+
+        if has_premise and not has_application:
+            failures.append({
+                'rule': 'IRAC_NO_APPLICATION',
+                'line': sec['line'],
+                'match': sec['title'],
+                'context': f"섹션 '{sec['title']}'",
+                'fix': (
+                    f"L{sec['line']} 섹션 '{sec['title']}'에 법리(대전제)는 "
+                    "있으나 이 사건에의 적용(소전제)이 누락되었습니다. "
+                    "\"이 사건에서 ~ \" 등으로 사안에 적용하십시오."
+                ),
+            })
 
         if has_application and not has_conclusion:
             failures.append({
@@ -294,8 +307,8 @@ def check_first_cite_has_quote(text):
     paren_cite = re.compile(r'\(.*판결\s*참조\)')
 
     quote_indicator = re.compile(
-        r'(판시하였습니다|판시한\s*바|판단하였습니다|보았습니다|'
-        r'판시하였고|"[^"]{10,}")'
+        r'(판시하였습니다|판시한\s*바|판단하였습니다|'
+        r'판시하였고|[이라]고\s*보았습니다|"[^"]{10,}")'
     )
 
     seen_cases = set()
@@ -355,7 +368,8 @@ def main():
         if stdin_data.strip():
             data = json.loads(stdin_data)
             fp = data.get('tool_input', {}).get('file_path', '')
-            if 'cases/' not in fp or not fp.endswith('.txt'):
+            _, ext = os.path.splitext(fp)
+            if 'cases/' not in fp or ext.lower() not in ('.txt', '.typ'):
                 sys.exit(0)
             target_from_stdin = fp
     except (json.JSONDecodeError, KeyError, TypeError):
