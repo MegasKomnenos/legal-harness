@@ -25,7 +25,7 @@ import glob
 import hashlib
 
 
-LAYER3_MODEL_CRITERIA = [
+PHASE2_CRITERIA = [
     ("§3", "소극적 논증 문맥",
      "문단 전체가 적극적 논증으로 구성되었는가. "
      "소극적 종결 후 적극 논증이 부족한 문단이 없는가"),
@@ -35,19 +35,20 @@ LAYER3_MODEL_CRITERIA = [
     ("§6", "포섭 구체성",
      "사실관계 적용이 구체적이며 과대·과소 서술이 없는가"),
     ("§7", "표현 적절성",
-     "정형 표현 패턴이 준수되었는가. 공격적·유보적 표현이 없는가"),
+     "정형 표현 패턴이 준수되었는가. 톤·레지스터가 문서 유형에 맞는가"),
     ("§8", "판례 인용 깊이",
-     "정식 인용 시 사실관계 비교가 충분한가. "
-     "판시사항 원문이 기재되었는가"),
+     "판례 인용 시 해당 판결의 사실관계와 이 사건의 비교가 충분한가"),
     ("§11", "IRAC 완전성",
-     "대전제-소전제-결론 3단 구조가 문맥상 완전한가"),
+     "각 쟁점에 대전제-소전제-결론 3단 구조가 문맥상 완전한가"),
     ("§12", "그래프-문서 정합성",
      "그래프의 모든 법리가 반영되고 논증 순서가 그래프와 일치하는가"),
     ("§13", "출처 구별",
-     "조문 문언과 판례 해석 기준이 구별되었는가. "
-     "판례 용어를 조문에 귀속시키지 않았는가"),
+     "조문 문언과 판례 해석 기준이 구별되었는가"),
     ("§15", "그래프 대조",
      "그래프 JSON의 포섭·결론과 문서 논증이 일치하는가"),
+    ("§16", "작문 밀도",
+     "판례 과잉 나열 없음, 인용→포섭→결론 전환이 자연스러움, "
+     "중복 논증 없음, 분량이 논점 복잡도에 비례"),
 ]
 
 LEGAL_DOC_MARKERS = [
@@ -108,31 +109,11 @@ def scripts_would_pass(text, file_path, project_dir):
         sys.path.insert(0, script_dir)
 
     try:
-        from validate_legal_doc import validate as validate_l1
-        if not validate_l1(text, file_path)['pass']:
-            return False
+        from validate_doc import validate as validate_phase1
+        failures = validate_phase1(text, file_path, project_dir)
+        return len(failures) == 0
     except ImportError:
-        pass
-
-    try:
-        from validate_layer3 import validate as validate_l3
-        if not validate_l3(text, file_path)['pass']:
-            return False
-    except ImportError:
-        pass
-
-    try:
-        from validate_citations import parse_case_dictionary, \
-            validate as validate_l2
-        harness_dir = os.path.join(project_dir, 'harness')
-        case_dict = parse_case_dictionary(harness_dir)
-        if case_dict:
-            if not validate_l2(text, case_dict, file_path, project_dir)['pass']:
-                return False
-    except ImportError:
-        pass
-
-    return True
+        return True
 
 
 def build_evaluation_prompt(file_path, graph_path, doc_hash):
@@ -153,7 +134,7 @@ def build_evaluation_prompt(file_path, graph_path, doc_hash):
 
     lines.append('')
     lines.append('아래 기준으로 평가하라 (미충족 시 구체적으로 지적):')
-    for ref, name, detail in LAYER3_MODEL_CRITERIA:
+    for ref, name, detail in PHASE2_CRITERIA:
         lines.append(f'  {ref} {name}: {detail}')
 
     lines.extend([
