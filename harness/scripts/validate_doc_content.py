@@ -93,11 +93,13 @@ def check_already_passed(file_path, doc_hash):
     except (FileNotFoundError, UnicodeDecodeError):
         return False
 
-    pass_match = re.search(
+    for pass_match in re.finditer(
         r'-\s*Phase\s*2[^:]*:\s*pass\s*\(hash:\s*([a-f0-9]+)\)',
         text
-    )
-    return pass_match is not None and pass_match.group(1) == doc_hash
+    ):
+        if pass_match.group(1) == doc_hash:
+            return True
+    return False
 
 
 def scripts_would_pass(text, file_path, project_dir):

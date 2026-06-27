@@ -50,7 +50,12 @@ def find_recent_graph(project_dir):
 
 
 def compute_json_hash(json_text):
-    return hashlib.sha256(json_text.strip().encode()).hexdigest()[:12]
+    try:
+        data = json.loads(json_text)
+        normalized = json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
+        return hashlib.sha256(normalized.encode()).hexdigest()[:12]
+    except json.JSONDecodeError:
+        return hashlib.sha256(json_text.strip().encode()).hexdigest()[:12]
 
 
 def parse_graph_json(graph_path):
@@ -67,15 +72,12 @@ def parse_graph_json(graph_path):
     json_text = m.group(1)
     current_hash = compute_json_hash(json_text)
 
-    pass_match = re.search(
+    for pass_match in re.finditer(
         r'-\s*(?:내용\s*평가\(C\)|Phase\s*2[^:]*?):\s*pass\s*\(hash:\s*([a-f0-9]+)\)',
         text
-    )
-    if pass_match:
-        recorded_hash = pass_match.group(1)
-        if recorded_hash == current_hash:
+    ):
+        if pass_match.group(1) == current_hash:
             return None, 'already_passed', None
-        # hash 불일치 또는 미기록: 그래프 변경됨, 재평가 필요
 
     try:
         return json.loads(json_text), None, current_hash
