@@ -72,16 +72,45 @@
 
 ---
 
-## 제작 방식별 안내
+## 확정 제작 방식
 
-### 방식 A: Typst (권장)
-대동제-청구이유서·공사-보충서면이 Typst/LaTeX 계열로 추정됨. Typst는 한글 조판에 적합하고 CLI 기반 PDF 생성이 가능.
+### 엔진: WeasyPrint (HTML/CSS → PDF)
+- 스크립트: `harness/scripts/generate_pdf.py`
+- WeasyPrint 66+, Noto Serif CJK KR (시스템 폰트)
+- CSS로 위 확정 사양을 구현. 스크립트 내 `CSS` 상수에 내장.
 
-### 방식 B: Python (fpdf2/reportlab)
-프로그래밍 기반 생성 시 fpdf2 또는 reportlab 사용. Noto Serif CJK KR 폰트 파일(.otf) 필요.
+### 사용법
+```
+python3 harness/scripts/generate_pdf.py <입력.txt> [출력.pdf]
+python3 harness/scripts/generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
+```
+출력 경로 생략 시 입력 파일명에서 확장자만 `.pdf`로 교체.
 
-### 방식 C: HTML → PDF
-HTML/CSS로 레이아웃을 구성하고 브라우저 인쇄 또는 wkhtmltopdf로 변환.
+### 입력 파일 규약 (.txt)
+| 위치 | 규약 | 서식 |
+|------|------|------|
+| 첫 비공란 행 | 문서 제목 | 18pt Bold 중앙정렬 |
+| `(` 시작 행 (제목 직후) | 부제 | 11pt 중앙정렬 |
+| "사 건"/"청 구 인"/"피청구인" 시작 행 | 머리글 필드 (값과 공백 2칸 이상 구분) | 11pt, 탭 정렬 55mm |
+| Ⅰ./Ⅱ. 시작 행 | 소제목 | 13pt Bold |
+| 1./2. 시작 행 | 중제목 (로마 숫자 있을 때) 또는 소제목 (없을 때) | 11.5pt Bold / 13pt Bold |
+| 가./나. 시작 행 | 중제목 | 11.5pt Bold |
+| (1)/(가) 시작 행 | 소소제목 | 11pt, 10mm 들여쓰기 |
+| ①② 시작 행 | 최소 항목 | 11pt, 20mm 들여쓰기 |
+| 나머지 | 본문 단락 (빈 줄로 구분) | 11pt Regular |
+| 말미 YYYY. M. D. | 꼬리 시작 (자동 감지) | 우측정렬 |
+| "귀중"/"귀하" 종결 행 | 수신처 (자동 감지) | 중앙정렬 |
+
+### 자동 처리
+- 로마 숫자(Ⅰ~Ⅹ) 유무에 따라 아라비아 숫자(1.)의 heading 수준 자동 판단
+- "청 구 취 지" / "청 구 이 유" / "증 거 서 류": 섹션 타이틀 (18pt Bold 중앙정렬)
+- "증 거 서 류" 이후 번호 항목: 일반 텍스트 (Bold 아님)
+- 꼬리 영역(날짜·서명·수신처): page-break-inside: avoid
+
+### 10단계 절차
+1. 8단계에서 문서를 `.txt`로 저장 (위 규약 준수)
+2. `python3 harness/scripts/generate_pdf.py <파일.txt>` 실행
+3. 동일 경로에 `.pdf` 생성됨
 
 ---
 
