@@ -7,3 +7,4 @@ __pycache__/
 *.jpg
 *.jpeg
 .claude/settings.local.json
+webapp/

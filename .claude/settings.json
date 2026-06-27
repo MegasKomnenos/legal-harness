@@ -18,27 +18,32 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"harness/scripts/validate_legal_doc.py\"",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_step_gate.py .",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"harness/scripts/validate_harness_integrity.py\"",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_legal_doc.py",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python \"harness/scripts/validate_graph_content.py\" \".\"",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_harness_integrity.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_graph_content.py .",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "python \"harness/scripts/validate_citations.py\" \".\"",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_citations.py .",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "python \"harness/scripts/validate_layer3.py\" \".\"",
+            "command": "cd /home/scouter/testff && python harness/scripts/validate_layer3.py .",
             "timeout": 30
           }
         ]
