@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Layer 2: 인용 정합성 검증 스크립트.
 
-Stop hook으로 턴 종료 시 자동 실행.
-생성된 법률 문서의 판례·조문 인용이 인용 사전과 일치하는지 검증한다.
-불일치 시 exit code 2를 반환하여 자기수정 루프를 작동시킨다.
+PostToolUse hook으로 cases/ 아래 법률 문서(.txt)가
+Write/Edit될 때 자동 실행. stdin의 tool_input.file_path가
+cases/ 아래 .txt 파일인 경우에만 실행하고 아니면 즉시 exit 0.
 
 사용법:
   python validate_citations.py <project_dir> [target_file]
@@ -298,15 +298,19 @@ def validate(text, case_dict, filename="", project_dir="."):
 
 
 def main():
-    # Stop hook 무한루프 방지: stdin에서 stop_hook_active 확인
+    # PostToolUse hook: stdin에서 file_path를 확인하여
+    # cases/ 아래 .txt 파일이 아니면 즉시 종료
+    target_from_stdin = None
     try:
         stdin_data = sys.stdin.read()
         if stdin_data.strip():
             data = json.loads(stdin_data)
-            if data.get('stop_hook_active', False):
+            fp = data.get('tool_input', {}).get('file_path', '')
+            if 'cases/' not in fp or not fp.endswith('.txt'):
                 sys.exit(0)
-    except (json.JSONDecodeError, KeyError):
-        pass
+            target_from_stdin = fp
+    except (json.JSONDecodeError, KeyError, TypeError):
+        sys.exit(0)
 
     project_dir = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
     target_file = sys.argv[2] if len(sys.argv) > 2 else None
@@ -319,7 +323,9 @@ def main():
         sys.exit(0)
 
     # 대상 파일 결정
-    if target_file:
+    if target_from_stdin:
+        file_path = target_from_stdin
+    elif target_file:
         file_path = target_file
     else:
         file_path = find_target_file(project_dir)

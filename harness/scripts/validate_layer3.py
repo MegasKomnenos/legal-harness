@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Layer 3: 논증 품질 검증 스크립트 (핵심 3종).
 
-Stop hook으로 턴 종료 시 자동 실행.
-법률 문서의 논증 품질 핵심 항목을 탐지하여
-exit 2로 모델 재진입(자기수정 루프)을 유발한다.
-
-비법률 문서 턴에서는 exit 0으로 즉시 종료 (토큰 소모 0).
+PostToolUse hook으로 cases/ 아래 법률 문서(.txt)가
+Write/Edit될 때 자동 실행. stdin의 tool_input.file_path가
+cases/ 아래 .txt 파일인 경우에만 실행하고 아니면 즉시 exit 0.
 
 탐지 항목:
   (a) 소극적 논증으로 끝나는 문단 (줄 단위가 아닌 문단 단위)
@@ -349,19 +347,26 @@ def validate(text, filename=""):
 
 
 def main():
+    # PostToolUse hook: stdin에서 file_path를 확인하여
+    # cases/ 아래 .txt 파일이 아니면 즉시 종료
+    target_from_stdin = None
     try:
         stdin_data = sys.stdin.read()
         if stdin_data.strip():
             data = json.loads(stdin_data)
-            if data.get('stop_hook_active', False):
+            fp = data.get('tool_input', {}).get('file_path', '')
+            if 'cases/' not in fp or not fp.endswith('.txt'):
                 sys.exit(0)
-    except (json.JSONDecodeError, KeyError):
-        pass
+            target_from_stdin = fp
+    except (json.JSONDecodeError, KeyError, TypeError):
+        sys.exit(0)
 
     project_dir = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
     target_file = sys.argv[2] if len(sys.argv) > 2 else None
 
-    if target_file:
+    if target_from_stdin:
+        file_path = target_from_stdin
+    elif target_file:
         file_path = target_file
     else:
         file_path = find_target_file(project_dir)

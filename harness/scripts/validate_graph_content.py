@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""그래프 내용 평가 스크립트 (Stop hook).
+"""그래프 내용 평가 스크립트 (PostToolUse hook).
 
-법리 그래프 파일의 JSON을 파싱하고, 01_법리_데이터베이스.md에서
-각 법리의 연관 법리·적용 사례를 추출하여 독립 평가 프롬프트를
-stderr에 출력한다. exit 2로 모델 재진입을 유발하면, 재진입한
-모델이 신선한 컨텍스트에서 그래프의 법리 선택·포섭·전략을
-독립적으로 평가한다.
+법리그래프_*.md 파일이 Write/Edit될 때 PostToolUse hook으로
+실행된다. 그래프 파일의 JSON을 파싱하고,
+01_법리_데이터베이스.md에서 각 법리의 연관 법리·적용 사례를
+추출하여 독립 평가 프롬프트를 stderr에 출력한다. exit 2로
+모델 재진입을 유발하면, 재진입한 모델이 신선한 컨텍스트에서
+그래프의 법리 선택·포섭·전략을 독립적으로 평가한다.
 
 그래프 파일에 '내용 평가: pass'가 있으면 이미 평가 완료로
 간주하여 즉시 종료한다(토큰 소모 0).
+
+PostToolUse hook이므로, stdin의 tool_input.file_path에
+'법리그래프_'가 포함된 경우에만 실행하고 아니면 즉시 exit 0.
 
 사용법:
   python validate_graph_content.py <project_dir>
@@ -159,14 +163,17 @@ def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path):
 
 
 def main():
+    # PostToolUse hook: stdin에서 tool_input.file_path를 확인하여
+    # 법리그래프_ 파일이 아니면 즉시 종료
     try:
         stdin_data = sys.stdin.read()
         if stdin_data.strip():
             data = json.loads(stdin_data)
-            if data.get('stop_hook_active', False):
+            file_path = data.get('tool_input', {}).get('file_path', '')
+            if '법리그래프_' not in os.path.basename(file_path):
                 sys.exit(0)
-    except (json.JSONDecodeError, KeyError):
-        pass
+    except (json.JSONDecodeError, KeyError, TypeError):
+        sys.exit(0)
 
     project_dir = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
 
