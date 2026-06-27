@@ -380,12 +380,30 @@ def main():
 
     result = validate(text, file_path)
 
-    if not result['pass']:
+    all_failures = list(result['failures'])
+
+    try:
+        from validate_graph import parse_graph_json, find_graph_file, \
+            load_doctrine_codes, validate as validate_graph
+        graph_path = find_graph_file(file_path)
+        if graph_path:
+            graph_data = parse_graph_json(graph_path)
+            if graph_data is not None:
+                harness_dir = os.path.join(project_dir, 'harness')
+                valid_codes = load_doctrine_codes(harness_dir)
+                graph_result = validate_graph(
+                    graph_data, text, valid_codes, graph_path, file_path
+                )
+                all_failures.extend(graph_result['failures'])
+    except ImportError:
+        pass
+
+    if all_failures:
         report_lines = [
-            f"[논증 품질 검증] {result['failure_count']}건 발견 "
+            f"[논증 품질 검증] {len(all_failures)}건 발견 "
             f"({os.path.basename(file_path)}):"
         ]
-        for f in result['failures']:
+        for f in all_failures:
             report_lines.append(f"  {f['fix']}")
 
         print('\n'.join(report_lines), file=sys.stderr)

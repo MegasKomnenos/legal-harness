@@ -41,6 +41,11 @@
             "type": "command",
             "command": "python \"harness/scripts/validate_layer3.py\" \".\"",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python \"harness/scripts/validate_graph_content.py\" \".\"",
+            "timeout": 30
           }
         ]
       }
