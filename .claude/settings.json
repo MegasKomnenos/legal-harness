@@ -1,0 +1,59 @@
+{
+  "$comment": "Committed project policy. CLAUDE.md is advisory; the HARD guards live here. Personal overrides go in .claude/settings.local.json (gitignored).",
+  "permissions": {
+    "allow": [
+      "Read(harness/**)",
+      "Read(cases/**)",
+      "Read(법령_판례/**)",
+      "Bash(python3 extract_all.py *)",
+      "Bash(python3 harness/scripts/validate_*)"
+    ],
+    "deny": [
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"harness/scripts/validate_legal_doc.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python \"harness/scripts/validate_harness_integrity.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"harness/scripts/validate_citations.py\" \".\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python \"harness/scripts/validate_layer3.py\" \".\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "컨텍스트가 압축됩니다. 다음 정보가 압축 요약에 반드시 포함되도록 하십시오: (1) 현재 작업 중인 문서 유형과 사건번호, (2) 어떤 harness 참조 파일을 이미 읽었는지, (3) 어떤 판례의 전문을 이미 읽었는지, (4) 현재 검증 단계(Layer 1/2/3 중 어디까지 완료했는지), (5) 사용자가 확인한 쟁점 및 방향, (6) 답변서의 핵심 주장 요지."
+          }
+        ]
+      }
+    ]
+  }
+}
