@@ -3,7 +3,7 @@
 
 법리그래프_*.md 파일이 Write/Edit될 때 PostToolUse hook으로
 실행된다. 그래프 파일의 JSON을 파싱하고,
-01_법리_데이터베이스.md에서 각 법리의 연관 법리·적용 사례를
+data/법리_데이터베이스.md에서 각 법리의 연관 법리·적용 사례를
 추출하여 독립 평가 프롬프트를 구성한다.
 
 exit 2로 모델 재진입을 유발하되, 메인 에이전트에게 Agent 도구로
@@ -18,7 +18,7 @@ PostToolUse hook이므로, stdin의 tool_input.file_path에
 '법리그래프_'가 포함된 경우에만 실행하고 아니면 즉시 exit 0.
 
 사용법:
-  python validate_graph_content.py <project_dir>
+  python validate_graph_eval.py <project_dir>
 """
 
 import sys
@@ -86,7 +86,7 @@ def parse_graph_json(graph_path):
 
 
 def extract_doctrine_context(harness_dir, codes):
-    db_path = os.path.join(harness_dir, '01_법리_데이터베이스.md')
+    db_path = os.path.join(harness_dir, 'data/법리_데이터베이스.md')
     try:
         with open(db_path, 'r', encoding='utf-8') as f:
             text = f.read()

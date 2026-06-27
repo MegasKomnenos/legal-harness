@@ -12,7 +12,7 @@ Usage:
   - 나머지: 본문 단락 (빈 줄로 구분)
   - 말미 YYYY. M. D. + 서명 + 귀중/귀하: 서명·수신
 
-서식: harness/08_PDF_서식_사양.md 확정 사양
+서식: harness/quality/PDF_서식.md 확정 사양
 엔진: WeasyPrint 66+, Noto Serif CJK KR
 """
 import sys
@@ -20,7 +20,7 @@ import re
 import html as _h
 from pathlib import Path
 
-# ── CSS: 08_PDF_서식_사양.md 확정 사양 ─────────────────────
+# ── CSS: quality/PDF_서식.md 확정 사양 ─────────────────────
 CSS = """\
 @page {
   size: A4;

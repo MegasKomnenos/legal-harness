@@ -5,8 +5,8 @@
       "Read(harness/**)",
       "Read(cases/**)",
       "Read(법령_판례/**)",
-      "Bash(python3 extract_all.py *)",
-      "Bash(python3 harness/scripts/validate_*)"
+      "Bash(python extract_all.py *)",
+      "Bash(python harness/scripts/validate_*)"
     ],
     "deny": [
     ]
@@ -23,12 +23,12 @@
           },
           {
             "type": "command",
-            "command": "python harness/scripts/validate_harness_integrity.py",
-            "timeout": 15
+            "command": "python harness/scripts/validate_graph.py .",
+            "timeout": 30
           },
           {
             "type": "command",
-            "command": "python harness/scripts/validate_graph_content.py .",
+            "command": "python harness/scripts/validate_graph_eval.py .",
             "timeout": 30
           },
           {
@@ -38,7 +38,7 @@
           },
           {
             "type": "command",
-            "command": "python harness/scripts/validate_doc_content.py .",
+            "command": "python harness/scripts/validate_doc_eval.py .",
             "timeout": 30
           }
         ]

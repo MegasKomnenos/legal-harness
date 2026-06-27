@@ -4,11 +4,10 @@
 법리그래프 파일(.md)의 JSON 데이터 블록을 파싱하여
 법률 문서와의 정합성을 자동 검증한다.
 
-validate_layer3.py에서 호출되어 Layer 3 검증의 일부로 작동하거나,
-단독 실행으로 4-2단계 그래프 검증을 보조한다.
+PostToolUse hook으로 자동 실행되거나 단독 실행으로 7단계 그래프 검증을 보조한다.
 
 탐지 항목:
-  (a) 그래프 코드가 01_법리_데이터베이스.md에 미수록
+  (a) 그래프 코드가 data/법리_데이터베이스.md에 미수록
   (b) 그래프 판례가 문서에 미반영
   (c) 문서의 판례가 그래프에 미등록
   (d) 쟁점 순서 불일치
@@ -26,7 +25,7 @@ import glob
 
 
 def load_doctrine_codes(harness_dir):
-    db_path = os.path.join(harness_dir, '01_법리_데이터베이스.md')
+    db_path = os.path.join(harness_dir, 'data/법리_데이터베이스.md')
     codes = set()
     try:
         with open(db_path, 'r', encoding='utf-8') as f:
@@ -101,7 +100,7 @@ def validate(graph_data, doc_text, valid_codes, graph_path="", doc_path=""):
                 'rule': 'GRAPH_CODE_UNKNOWN',
                 'match': code,
                 'fix': (
-                    f"그래프 코드 '{code}'가 01_법리_데이터베이스.md에 "
+                    f"그래프 코드 '{code}'가 data/법리_데이터베이스.md에 "
                     "수록되어 있지 않습니다. 코드명을 확인하십시오."
                 ),
             })

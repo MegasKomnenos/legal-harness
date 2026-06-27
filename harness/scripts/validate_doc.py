@@ -158,7 +158,7 @@ def check_patterns(text):
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def parse_case_dictionary(harness_dir):
-    path = os.path.join(harness_dir, '02_판례_인용_사전.md')
+    path = os.path.join(harness_dir, 'data/판례_인용_사전.md')
     cases = set()
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -171,7 +171,7 @@ def parse_case_dictionary(harness_dir):
 
 
 def parse_statute_dictionary(harness_dir):
-    path = os.path.join(harness_dir, '02-1_법조문_인용_사전.md')
+    path = os.path.join(harness_dir, 'data/법조문_인용_사전.md')
     keys = set()
     law_names = set()
     try:

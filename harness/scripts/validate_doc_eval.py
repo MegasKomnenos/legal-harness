@@ -2,7 +2,7 @@
 """문서 내용 평가 스크립트 (PostToolUse hook).
 
 cases/ 아래 .txt/.typ 법률 문서가 Write/Edit될 때 자동 실행.
-Phase 1(Layer 1/2/3 스크립트)이 모두 통과한 경우에만
+Phase 1(validate_doc.py)이 통과한 경우에만
 서브에이전트 독립 평가를 트리거한다.
 
 Phase 1 통과 여부를 내부적으로 확인하여, 미통과 시 exit 0
@@ -14,7 +14,7 @@ Phase 1 통과 여부를 내부적으로 확인하여, 미통과 시 exit 0
 
 사용법:
   stdin으로 PostToolUse hook JSON을 받는다.
-  python validate_doc_content.py <project_dir>
+  python validate_doc_eval.py <project_dir>
 """
 
 import sys
