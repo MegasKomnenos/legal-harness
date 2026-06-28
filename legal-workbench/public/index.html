@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Workbench</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">Legal Workbench</span>
+    </div>
+    <div class="header-right">
+      <span class="connection-dot" id="connDot"></span>
+      <span class="session-info" id="sessionInfo"></span>
+      <span class="elapsed" id="elapsed"></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <button class="sidebar-toggle" data-target="stepsBody">
+          <span class="toggle-icon">&#9662;</span>
+          <span>단계</span>
+        </button>
+        <div class="sidebar-body" id="stepsBody">
+          <div class="step-timeline" id="stepTimeline"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <button class="sidebar-toggle" data-target="filesBody">
+          <span class="toggle-icon">&#9662;</span>
+          <span>파일</span>
+        </button>
+        <div class="sidebar-body" id="filesBody">
+          <div class="file-tree" id="fileTree"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="output-stream" id="outputStream">
+        <div class="welcome" id="welcome">
+          <h2>행정 분쟁 법률 문서 생성기</h2>
+          <p>사건을 선택하면 청구이유서, 보충서면 등을 10단계 자동 파이프라인으로 생성합니다</p>
+
+          <div class="case-cards" id="caseCards"></div>
+
+          <div class="doc-type-picker" id="docTypePicker" style="display:none">
+            <div class="picker-label" id="pickerLabel"></div>
+            <div class="picker-types" id="pickerTypes"></div>
+            <button class="picker-back" id="pickerBack">다른 사건 선택</button>
+          </div>
+
+          <div class="pipeline-preview">
+            <div class="pipeline-label">작동 방식</div>
+            <div class="pipeline-flow">
+              <div class="pipeline-phase">
+                <div class="phase-title">분석</div>
+                <div class="phase-desc">사건·판례·법령 통독</div>
+              </div>
+              <div class="pipeline-arrow"></div>
+              <div class="pipeline-phase">
+                <div class="phase-title">논증 설계</div>
+                <div class="phase-desc">법리 그래프 설계·검증</div>
+              </div>
+              <div class="pipeline-arrow"></div>
+              <div class="pipeline-phase">
+                <div class="phase-title">문서 생성</div>
+                <div class="phase-desc">작성 후 2-Phase 검증</div>
+              </div>
+              <div class="pipeline-arrow"></div>
+              <div class="pipeline-phase">
+                <div class="phase-title">PDF 출력</div>
+                <div class="phase-desc">최종본 생성</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dock-resize" id="dockResize"></div>
+      <div class="artifact-dock" id="artifactDock">
+        <div class="dock-tabs" id="dockTabs"></div>
+        <div class="dock-panel" id="dockPanel"></div>
+      </div>
+
+      <div class="prompt-area" id="promptArea">
+        <div class="prompt-hint" id="promptHint"></div>
+        <div class="prompt-row">
+          <textarea
+            id="promptInput"
+            placeholder="사건과 문서 유형을 선택하거나 직접 입력하세요"
+            rows="1"
+          ></textarea>
+          <button class="btn-send" id="btnSend" title="전송">&#9654;</button>
+          <button class="btn-abort" id="btnAbort" title="중단" style="display:none;">&#9632;</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="file-panel" id="filePanel">
+    <div class="file-panel-header">
+      <span class="file-panel-path" id="filePanelPath"></span>
+      <div class="file-panel-actions">
+        <button class="btn-download" id="btnDownload" style="display:none;" title="다운로드">&#8615;</button>
+        <button class="btn-save" id="btnSave" style="display:none;">저장</button>
+        <button class="btn-close-panel" id="btnClosePanel">&times;</button>
+      </div>
+    </div>
+    <div class="file-panel-body" id="filePanelBody"></div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/markdown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
