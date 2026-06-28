@@ -236,6 +236,7 @@ def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path, json_hash):
 def main():
     # PostToolUse hook: stdin에서 tool_input.file_path를 확인하여
     # 법리그래프_ 파일이 아니면 즉시 종료
+    target_from_stdin = None
     try:
         stdin_data = sys.stdin.read()
         if stdin_data.strip():
@@ -243,12 +244,13 @@ def main():
             file_path = data.get('tool_input', {}).get('file_path', '')
             if '법리그래프_' not in os.path.basename(file_path):
                 sys.exit(0)
+            target_from_stdin = file_path
     except (json.JSONDecodeError, KeyError, TypeError):
         sys.exit(0)
 
     project_dir = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
 
-    graph_path = find_recent_graph(project_dir)
+    graph_path = target_from_stdin or find_recent_graph(project_dir)
     if not graph_path:
         sys.exit(0)
 
