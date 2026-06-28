@@ -8,3 +8,5 @@ __pycache__/
 *.jpeg
 .claude/settings.local.json
 legal-workbench/
+graphify-out/
+*.pdf
