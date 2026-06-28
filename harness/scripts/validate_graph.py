@@ -109,9 +109,23 @@ def find_legal_doc(graph_path):
     return None
 
 
+CASE_NUM_RE = re.compile(
+    r'(\d{4}(?:두|다|구합|구단|누|나|노|도|루|마|부|카|타|허|후|추|초|재|고합|고단)\d+)'
+)
+
+OPPONENT_CITE_RE = re.compile(
+    r'피청구인[은이가]?\s*.{0,80}(?:원용|인용|제출|주장)',
+    re.DOTALL,
+)
+
+
 def extract_case_numbers_from_text(text):
-    pattern = re.compile(r'(\d{4}[가-힣]+\d+)')
-    return set(pattern.findall(text))
+    return set(CASE_NUM_RE.findall(text))
+
+
+def is_opponent_citation(text, match_start):
+    pre = text[max(0, match_start - 200):match_start]
+    return bool(OPPONENT_CITE_RE.search(pre))
 
 
 def validate(graph_data, doc_text, valid_codes, graph_path="", doc_path=""):
@@ -165,15 +179,20 @@ def validate(graph_data, doc_text, valid_codes, graph_path="", doc_path=""):
         doc_only_cases = doc_cases - graph_cases
         if doc_only_cases and graph_cases:
             for case_num in sorted(doc_only_cases):
-                failures.append({
-                    'rule': 'DOC_CASE_NOT_IN_GRAPH',
-                    'match': case_num,
-                    'fix': (
-                        f"문서에 인용된 판례 {case_num}이 그래프에 "
-                        "등록되어 있지 않습니다. 그래프에 추가하거나, "
-                        "문서에서 인용을 제거하십시오."
-                    ),
-                })
+                for m in CASE_NUM_RE.finditer(doc_text):
+                    if m.group(1) == case_num:
+                        if is_opponent_citation(doc_text, m.start()):
+                            break
+                else:
+                    failures.append({
+                        'rule': 'DOC_CASE_NOT_IN_GRAPH',
+                        'match': case_num,
+                        'fix': (
+                            f"문서에 인용된 판례 {case_num}이 그래프에 "
+                            "등록되어 있지 않습니다. 그래프에 추가하거나, "
+                            "문서에서 인용을 제거하십시오."
+                        ),
+                    })
 
     for issue in graph_data.get('issues', []):
         has_primary = any(
