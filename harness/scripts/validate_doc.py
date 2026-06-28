@@ -265,7 +265,7 @@ def main():
             fp = data.get('tool_input', {}).get('file_path', '')
             _, ext = os.path.splitext(fp)
             n = os.path.normpath(fp).replace('\\', '/')
-            if ext.lower() not in ('.txt', '.typ', '.md'):
+            if ext.lower() not in ('.txt', '.typ'):
                 sys.exit(0)
             if any(s in n for s in ['/harness/', '/.claude/', '/scripts/']):
                 sys.exit(0)

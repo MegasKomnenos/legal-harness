@@ -139,6 +139,23 @@ def find_progress_log(graph_path):
     return None
 
 
+def graph_phase1_would_pass(graph_path, project_dir):
+    script_dir = os.path.join(project_dir, 'harness', 'scripts')
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    try:
+        import validate_graph
+        gd = validate_graph.parse_graph_json(graph_path)
+        if gd is None:
+            return False
+        harness_dir = os.path.join(project_dir, 'harness')
+        valid_codes = validate_graph.load_doctrine_codes(harness_dir)
+        result = validate_graph.validate(gd, '', valid_codes, graph_path)
+        return result['pass']
+    except ImportError:
+        return True
+
+
 def build_evaluation_prompt(graph_data, doctrine_ctx, graph_path, json_hash):
     progress_log = find_progress_log(graph_path)
 
@@ -258,6 +275,9 @@ def main():
 
     harness_dir = os.path.join(project_dir, 'harness')
     doctrine_ctx = extract_doctrine_context(harness_dir, codes)
+
+    if not graph_phase1_would_pass(graph_path, project_dir):
+        sys.exit(0)
 
     prompt = build_evaluation_prompt(graph_data, doctrine_ctx, graph_path, json_hash)
 
