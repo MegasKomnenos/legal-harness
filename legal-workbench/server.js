@@ -18,6 +18,7 @@ const STEPS = [
   { step: 8, label: '문서 생성' },
   { step: 9, label: '문서 검증 루프' },
   { step: 10, label: 'PDF 출력' },
+  { step: 11, label: '정리 및 보관' },
 ];
 
 const TOOL_PATTERNS = [
@@ -33,6 +34,8 @@ const TOOL_PATTERNS = [
   { step: 9, tool: 'Bash', pattern: /validate_doc/ },
   { step: 10, tool: 'Bash', pattern: /generate_pdf\.py|\.pdf/ },
   { step: 10, tool: 'Write', pattern: /\.pdf$/ },
+  { step: 11, tool: 'Bash', pattern: /mv\s+.*?(진행로그|법리그래프|검증이력)|mkdir.*archive/ },
+  { step: 11, tool: 'Bash', pattern: /mv\s+.*?작성_최종/ },
 ];
 
 const TEXT_PATTERNS = [
@@ -44,6 +47,7 @@ const TEXT_PATTERNS = [
   { step: 8, patterns: [/8단계/, /문서\s*생성/, /그래프를\s*청사진/] },
   { step: 9, patterns: [/9단계/, /문서\s*검증/, /Phase\s*[12].*문서/] },
   { step: 10, patterns: [/10단계/, /PDF\s*출력/, /generate_pdf/] },
+  { step: 11, patterns: [/11단계/, /정리\s*(및|&)\s*보관/, /archive.*이동/, /산출물\s*배치/] },
 ];
 
 const STEP_COMPLETE_RE = /###\s*(\d+)단계\s*완료/;

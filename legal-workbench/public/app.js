@@ -48,6 +48,7 @@
     { step: 8, label: '문서 생성', hint: '확정된 그래프를 기반으로 법률 문서 작성' },
     { step: 9, label: '문서 검증 루프', hint: '스크립트 + 독립 평가 2-Phase 반복 검증' },
     { step: 10, label: 'PDF 출력', hint: 'A4 서식에 맞춰 PDF 생성' },
+    { step: 11, label: '정리 및 보관', hint: '산출물 배치 확인, 로그 파일 archive 이동' },
   ];
 
   // ── DOM refs ───────────────────────────
