@@ -6,7 +6,9 @@
       "Read(cases/**)",
       "Read(법령_판례/**)",
       "Bash(python extract_all.py *)",
-      "Bash(python harness/scripts/validate_*)"
+      "Bash(python3 extract_all.py *)",
+      "Bash(python harness/scripts/validate_*)",
+      "Bash(python3 harness/scripts/validate_*)"
     ],
     "deny": [
     ]
