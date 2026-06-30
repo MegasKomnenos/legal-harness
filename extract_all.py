@@ -24,6 +24,19 @@ if os.path.isdir(TESSDATA_PREFIX):
     os.environ["TESSDATA_PREFIX"] = TESSDATA_PREFIX
 
 
+def _find_tesseract_cmd():
+    for p in [
+        Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+        Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+    ]:
+        if p.exists():
+            return str(p)
+    return "tesseract"
+
+
+TESSERACT_CMD = _find_tesseract_cmd()
+
+
 def init_whisper():
     global whisper_model
     if whisper_model is None:
@@ -34,19 +47,35 @@ def init_whisper():
     return whisper_model
 
 
-def ocr_image_file(path):
+def _init_pytesseract():
     import pytesseract
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+    return pytesseract
+
+
+def _preprocess_for_ocr(img):
+    from PIL import ImageEnhance, ImageFilter
+    gray = img.convert("L")
+    gray = ImageEnhance.Contrast(gray).enhance(1.5)
+    gray = gray.filter(ImageFilter.SHARPEN)
+    return gray
+
+
+def ocr_image_file(path, psm=3):
+    pytesseract = _init_pytesseract()
     from PIL import Image
     img = Image.open(str(path))
-    text = pytesseract.image_to_string(img, lang="kor+eng", config="--psm 6")
+    img = _preprocess_for_ocr(img)
+    text = pytesseract.image_to_string(img, lang="kor+eng", config=f"--psm {psm}")
     return text.strip()
 
 
-def ocr_image_bytes(img_bytes, ext="png"):
-    import pytesseract
+def ocr_image_bytes(img_bytes, ext="png", psm=3):
+    pytesseract = _init_pytesseract()
     from PIL import Image
     img = Image.open(BytesIO(img_bytes))
-    text = pytesseract.image_to_string(img, lang="kor+eng", config="--psm 6")
+    img = _preprocess_for_ocr(img)
+    text = pytesseract.image_to_string(img, lang="kor+eng", config=f"--psm {psm}")
     return text.strip()
 
 
@@ -62,6 +91,36 @@ def extract_text_file(path):
 
 
 # ── 좌표 기반 텍스트 재조합 ──
+
+def _dedup_shadow_spans(spans, y_tol=4.0):
+    """그림자/볼드 효과로 중복 배치된 텍스트 span 제거.
+
+    (1) 동일 텍스트·유사 위치의 단순 그림자 복사본 제거
+    (2) 넓은 span에 포함되는 좁은 sub-span 제거 (멀티레이어 그림자)
+    """
+    if not spans:
+        return spans
+    wider_first = sorted(spans, key=lambda s: (s[0], -(s[2] - s[1])))
+    kept = []
+    for span in wider_first:
+        y, x0, x1, sz, text = span
+        is_covered = False
+        for k in kept:
+            ky, kx0, kx1, ksz, ktext = k
+            if abs(y - ky) > y_tol or abs(sz - ksz) > 2.0:
+                continue
+            overlap_start = max(x0, kx0)
+            overlap_end = min(x1, kx1)
+            span_len = x1 - x0
+            if overlap_end > overlap_start and span_len > 0:
+                if (overlap_end - overlap_start) / span_len > 0.5:
+                    is_covered = True
+                    break
+        if not is_covered:
+            kept.append(span)
+    kept.sort(key=lambda s: (s[0], s[1]))
+    return kept
+
 
 def extract_page_structured(page):
     Y_TOL = 4.0
@@ -82,6 +141,7 @@ def extract_page_structured(page):
     if not spans_all:
         return ""
     spans_all.sort(key=lambda t: (t[0], t[1]))
+    spans_all = _dedup_shadow_spans(spans_all)
 
     result_lines = []
     cur_y = None
@@ -163,16 +223,32 @@ def extract_pdf(path):
             continue
 
         has_content_img = False
+        is_fullpage_scan = False
         for img in images:
             try:
                 bi = doc.extract_image(img[0])
                 if bi["width"] * bi["height"] > 160000:
                     has_content_img = True
+                    xref = img[0]
+                    img_rects = page.get_image_rects(xref)
+                    page_area = page.rect.width * page.rect.height
+                    if any((ir.width * ir.height) / page_area > 0.80 for ir in img_rects):
+                        is_fullpage_scan = True
                     break
             except Exception:
                 pass
 
-        if has_content_img:
+        if is_fullpage_scan:
+            pix = page.get_pixmap(dpi=300)
+            tmp_path = SCRATCH_DIR / f"render_p{i+1}.png"
+            pix.save(str(tmp_path))
+            ocr_text = ocr_image_file(tmp_path, psm=4)
+            tmp_path.unlink(missing_ok=True)
+            if ocr_text.strip():
+                all_text.append(ocr_text)
+                methods_used.add("scan_ocr")
+
+        elif has_content_img:
             page_ocr_parts = []
             for img in images:
                 try:
@@ -429,7 +505,7 @@ def process_file(path):
 
 def main():
     if len(sys.argv) < 2:
-        print("사용법: python3 extract_all.py <파일1> [파일2] ...", file=sys.stderr)
+        print("사용법: python extract_all.py <파일1> [파일2] ...", file=sys.stderr)
         print("지정된 파일에서 텍스트를 추출하여 stdout에 출력합니다.", file=sys.stderr)
         sys.exit(1)
 
