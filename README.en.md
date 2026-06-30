@@ -75,13 +75,14 @@ legal-case-harness/
 │   ├── 01_공사소음/            # Construction noise FOIA case
 │   ├── 02_대동제/              # Festival outsourcing FOIA case
 │   └── 03_성희롱/              # Sexual harassment FOIA case
-└── 법령_판례/                  # Statutes & case law (public records)
-    ├── 법률_시행령/            # Statutes & enforcement decrees
-    ├── 별표_고시/              # Annexed tables & public notices
-    ├── 판례/                   # Case law
-    ├── 재결례/                 # Adjudication decisions
-    ├── 경북대_내규/            # Kyungpook National University bylaws
-    └── 기타_참고/              # Other references
+├── 법령_판례/                  # Statutes & case law (public records)
+│   ├── 법률_시행령/            # Statutes & enforcement decrees
+│   ├── 별표_고시/              # Annexed tables & public notices
+│   ├── 판례/                   # Case law
+│   ├── 재결례/                 # Adjudication decisions
+│   ├── 경북대_내규/            # Kyungpook National University bylaws
+│   └── 기타_참고/              # Other references
+└── legal-workbench/            # Web UI (server & client)
 ```
 
 ## Case Overview
