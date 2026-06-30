@@ -6,7 +6,7 @@
 [![English](https://img.shields.io/badge/lang-English-blue)](#)
 
 A Claude Code harness and skill for systematic generation of Korean administrative law documents.
-Includes 37 legal doctrines, 27 case citations, and 6 document templates extracted from 3 real administrative adjudication cases, with a 10-step pipeline and 3-layer automated quality verification.
+Includes 37 legal doctrines, 27 case citations, and 6 document templates extracted from 3 real administrative adjudication cases, with a 10-step pipeline and 2-phase automated quality verification (PostToolUse hooks).
 
 ## Overview
 
@@ -33,23 +33,24 @@ Generates legal documents via the `/legal-harness [case] [type]` command in Clau
 
 - 10-step generation pipeline (see Overview)
 - Full-text loading principle: all case law and statutes are loaded in full, not as snippets
-- 3-layer iterative quality verification: repeats until all 15 checklist categories pass
+- 2-phase iterative quality verification: repeats until all 18 checklist categories pass (Phase 1 mechanical checks + Phase 2 subagent evaluation)
 
 ### `harness/` -- Reference Harness
 
-| File | Contents |
+| Path | Contents |
 |------|----------|
-| `01_법리_데이터베이스.md` | 37 legal doctrines (ID, case law, holdings, argument structure, application examples) |
-| `02_판례_인용_사전.md` | 27 case citations with exact citation format and original holdings |
-| `02-1_법조문_인용_사전.md` | Statute text verbatim (for citation cross-checking) |
-| `03_문서_구조_템플릿.md` | 6 document type templates with outline, numbering, and section rules |
-| `04_표현_사전.md` | 16-category standardized expression patterns |
-| `05_품질_기준_및_검증.md` | 15-category quality checklist |
-| `06_생성_메타프롬프트.md` | Claude system prompt and type-specific generation instructions |
-| `07_논증_가이드라인.md` | Argumentation error examples and corrections |
-| `08_PDF_서식_사양.md` | PDF output spec (A4, Noto Serif CJK KR) |
-| `09_문서_지도.md` | Full directory map and per-case document classification |
-| `10_유지보수_가이드.md` | Harness modification procedure for consistency maintenance |
+| `data/법리_데이터베이스.md` | 37 legal doctrines (ID, case law, holdings, argument structure, application examples) |
+| `data/판례_인용_사전.md` | 27 case citations with exact citation format and original holdings |
+| `data/법조문_인용_사전.md` | Statute text verbatim (for citation cross-checking) |
+| `style/문서_구조_템플릿.md` | 6 document type templates with outline, numbering, and section rules |
+| `style/표현_사전.md` | 16-category standardized expression patterns |
+| `style/논증_가이드라인.md` | Argumentation error examples and corrections |
+| `quality/검증_체크리스트.md` | 18-category quality checklist (Phase 1/2) |
+| `quality/PDF_서식.md` | PDF output spec (A4, Noto Serif CJK KR) |
+| `scripts/validate_*.py` | Validation scripts (step gate, graph/doc Phase 1/2) |
+| `scripts/generate_pdf.py` | txt-to-PDF conversion (WeasyPrint) |
+| `디렉토리_지도.md` | Full directory map and per-case document classification |
+| `관리_절차.md` | Case-law/case addition and harness modification procedure |
 
 ### `.claude/skills/extract-documents/` -- Document Extraction Skill
 
@@ -114,11 +115,11 @@ All case documents are anonymized with personal information removed.
 
 ### Manual Reference
 
-1. Check document structure in `03_문서_구조_템플릿.md` for the target document type
-2. Select applicable doctrines from `01_법리_데이터베이스.md`
-3. Cite case law only from `02_판례_인용_사전.md` verbatim
-4. Use standardized expressions from `04_표현_사전.md`
-5. Verify with `05_품질_기준_및_검증.md` checklist
+1. Check document structure in `style/문서_구조_템플릿.md` for the target document type
+2. Select applicable doctrines from `data/법리_데이터베이스.md`
+3. Cite case law only from `data/판례_인용_사전.md` verbatim
+4. Use standardized expressions from `style/표현_사전.md`
+5. Verify with `quality/검증_체크리스트.md` checklist
 
 ## Supported Document Types
 
@@ -137,14 +138,14 @@ All case documents are anonymized with personal information removed.
 `extract_all.py` extracts text from a given file and prints to stdout.
 
 ```bash
-python3 extract_all.py "법령_판례/판례/대법원_2003두8050.pdf"
-python3 extract_all.py "법령_판례/경북대_내규/경북대학교_학칙(규정_제2856호).pdf"
+python extract_all.py "법령_판례/판례/대법원_2003두8050.pdf"
+python extract_all.py "법령_판례/경북대_내규/경북대학교_학칙(규정_제2856호).pdf"
 ```
 
 ### Dependencies
 
 - PyMuPDF (`fitz`)
-- EasyOCR
+- pytesseract + Tesseract OCR engine (Korean+English)
 - pyhwp (`hwp5html`)
 - faster-whisper
 - ffmpeg
@@ -156,7 +157,7 @@ Legal doctrines, case citations, document structures, and expression patterns we
 
 ## Contributing
 
-Issues and pull requests are welcome. When modifying the `harness/` directory, follow the consistency maintenance procedure in `harness/10_유지보수_가이드.md`.
+Issues and pull requests are welcome. When modifying the `harness/` directory, follow the procedure in `harness/관리_절차.md` and run `python harness/scripts/validate_harness.py` to check consistency.
 
 ## License
 

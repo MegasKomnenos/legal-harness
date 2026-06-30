@@ -8,5 +8,4 @@ __pycache__/
 *.jpg
 *.jpeg
 .claude/settings.local.json
-graphify-out/
 *.pdf

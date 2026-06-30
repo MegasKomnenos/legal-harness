@@ -54,11 +54,11 @@
 보 충 서 면
 
 [좌측정렬, 11pt]
-사 건  [탭→80mm] {{사건번호}} {{사건명}}
-청 구 인  [탭→80mm] {{청구인_성명_자간벌림}}
-피청구인  [탭→80mm] {{피청구인}}
+사 건  [탭→55mm] {{사건번호}} {{사건명}}
+청 구 인  [탭→55mm] {{청구인_성명_자간벌림}}
+피청구인  [탭→55mm] {{피청구인}}
 ```
-- 항목명(사 건, 청 구 인, 피청구인)과 값 사이: 탭 정렬(80mm 위치)
+- 항목명(사 건, 청 구 인, 피청구인)과 값 사이: 탭 정렬(55mm 위치)
 - 성명: 자간 벌림
 - 피청구인: 기관명+직위 분리
 
@@ -81,8 +81,8 @@
 
 ### 사용법
 ```
-python3 scripts/generate_pdf.py <입력.txt> [출력.pdf]
-python3 scripts/generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
+python scripts/generate_pdf.py <입력.txt> [출력.pdf]
+python scripts/generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
 ```
 출력 경로 생략 시 입력 파일명에서 확장자만 `.pdf`로 교체.
 
@@ -109,7 +109,7 @@ python3 scripts/generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
 
 ### 10단계 절차
 1. 8단계에서 문서를 `.txt`로 저장 (위 규약 준수)
-2. `python3 scripts/generate_pdf.py <파일.txt>` 실행
+2. `python scripts/generate_pdf.py <파일.txt>` 실행
 3. 동일 경로에 `.pdf` 생성됨
 
 ---

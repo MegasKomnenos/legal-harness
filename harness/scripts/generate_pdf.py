@@ -2,8 +2,8 @@
 """법률 문서 .txt → PDF 변환 (WeasyPrint)
 
 Usage:
-    python3 generate_pdf.py <입력.txt> [출력.pdf]
-    python3 generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
+    python generate_pdf.py <입력.txt> [출력.pdf]
+    python generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
 
 입력 파일 규약:
   - 첫 비공란 행: 문서 제목 (18pt Bold 중앙정렬)

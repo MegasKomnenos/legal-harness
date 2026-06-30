@@ -11,7 +11,7 @@ argument-hint: <file paths to extract>
 ## Usage
 
 ```bash
-python3 extract_all.py <file1> [file2] ...
+python extract_all.py <file1> [file2] ...
 ```
 
 Extracted text goes to stdout. Progress/errors go to stderr.
@@ -20,10 +20,10 @@ Extracted text goes to stdout. Progress/errors go to stderr.
 
 ```bash
 # Single file
-python3 extract_all.py "법령_판례/판례/대법원_2003두8050.pdf"
+python extract_all.py "법령_판례/판례/대법원_2003두8050.pdf"
 
 # Multiple files
-python3 extract_all.py "cases/01_공사소음/절차_정보공개/*.pdf" "법령_판례/경북대_내규/*.pdf"
+python extract_all.py "cases/01_공사소음/절차_정보공개/*.pdf" "법령_판례/경북대_내규/*.pdf"
 ```
 
 ## Methods
@@ -32,7 +32,7 @@ python3 extract_all.py "cases/01_공사소음/절차_정보공개/*.pdf" "법령
 |---|--------|------|---------|
 | 1 | Direct text read | `open().read()` | `.txt`, `.md` |
 | 2 | PDF text layer | PyMuPDF `page.get_text()` | `.pdf` with text layer |
-| 3 | Image OCR | EasyOCR `['ko','en']` | `.png`, `.jpg`, image-only PDF pages, vector-drawing PDF pages (rendered at 300dpi), chart/diagram images inside text-layer pages |
+| 3 | Image OCR | Tesseract (pytesseract, `lang="kor+eng"`) | `.png`, `.jpg`, image-only PDF pages, vector-drawing PDF pages (rendered at 450dpi), chart/diagram images inside text-layer pages |
 | 4 | HWP conversion | `hwp5html` → strip HTML tags | `.hwp` |
 | 5 | DOCX XML parsing | `zipfile` → `w:t` tags | `.docx` |
 | 6 | Speech-to-text | faster-whisper (`base`, `ko`) | `.m4a`, `.mp4` audio track |
@@ -44,13 +44,13 @@ Each PDF page is classified independently:
 
 1. **Text > 50 chars** → use text layer. Additionally, any embedded image > 500K pixels that covers < 80% of page area gets supplementary OCR (catches charts/diagrams alongside text).
 2. **Text ≤ 50 chars + image > 160K pixels** → extract image, OCR it.
-3. **Text ≤ 50 chars + drawings > 100** → render page at 300dpi, OCR the rendered image (for vector-path PDFs like Gmail printouts).
+3. **Text ≤ 50 chars + drawings > 100** → render page at 450dpi, OCR the rendered image (for vector-path PDFs like Gmail printouts). Full-page scan pages are rendered at 300dpi.
 4. **Otherwise** → empty page (section dividers, page numbers).
 
 ## Dependencies
 
 - PyMuPDF (`fitz`) — PDF text/image extraction, page rendering
-- EasyOCR — Korean+English OCR (no tesseract needed)
+- pytesseract + Tesseract OCR engine: Korean+English OCR (`lang="kor+eng"`). Requires the Tesseract binary (Windows: `C:\Program Files\Tesseract-OCR\tesseract.exe`)
 - pyhwp (`hwp5html`) — HWP to XHTML conversion
 - faster-whisper — speech recognition
 - ffmpeg — audio extraction, video frame extraction
