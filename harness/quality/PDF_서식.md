@@ -74,10 +74,16 @@
 
 ## 확정 제작 방식
 
-### 엔진: WeasyPrint (HTML/CSS → PDF)
+### 엔진: WeasyPrint → Playwright 폴백 (HTML/CSS → PDF)
 - 스크립트: `scripts/generate_pdf.py`
-- WeasyPrint 66+, Noto Serif CJK KR (시스템 폰트)
-- CSS로 위 확정 사양을 구현. 스크립트 내 `CSS` 상수에 내장.
+- 1차 **WeasyPrint**(GTK 런타임 의존), 실패 시 2차 **Playwright**(시스템 Chromium: Edge → Chrome 순). 동일한 HTML/CSS(스크립트 내 `CSS` 상수)를 두 엔진이 공유하므로 어느 경로로 가든 서식이 동일하다.
+- GTK 런타임이 없는 환경(예: Windows)에서는 WeasyPrint import가 실패하므로 자동으로 Playwright 경로로 폴백한다. `generate_pdf.py` 출력의 `engine:` 표시로 실제 사용 엔진을 확인한다.
+- 폰트: Noto Serif CJK KR (시스템 폰트).
+- 페이지번호 `- N -`: WeasyPrint는 CSS `@bottom-center`로, Playwright는 Chromium이 `@bottom-center`(Paged Media margin box)를 지원하지 않으므로 `page.pdf`의 `footer_template`으로 재현한다. 두 경로 모두 하단 중앙에 동일하게 출력된다.
+
+### 환경 준비 (둘 중 하나만 갖추면 됨)
+- **Playwright 경로(권장, GTK 불요)**: `pip install playwright` 후 시스템 Edge 또는 Chrome이 있으면 된다. Playwright가 `channel=msedge`/`chrome`으로 시스템 브라우저를 재사용하므로 `playwright install`(번들 Chromium 다운로드)은 불필요하다.
+- **WeasyPrint 경로**: `pip install weasyprint` + GTK 런타임(Pango·Cairo·GObject). 리눅스·macOS는 패키지 매니저로 용이하나 Windows는 GTK 설치가 번거롭다.
 
 ### 사용법
 ```
@@ -109,8 +115,9 @@ python scripts/generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
 
 ### 10단계 절차
 1. 8단계에서 문서를 `.txt`로 저장 (위 규약 준수)
-2. `python scripts/generate_pdf.py <파일.txt>` 실행
-3. 동일 경로에 `.pdf` 생성됨
+2. `python scripts/generate_pdf.py <파일.txt>` 실행 (WeasyPrint → Playwright 자동 폴백)
+3. 동일 경로에 `.pdf` 생성됨. 출력의 `engine:`으로 사용 엔진 확인
+4. 두 엔진 모두 사용 불가하면 명확한 오류로 중단되므로, 위 '환경 준비' 중 하나를 갖춘 뒤 재실행한다. PDF는 `.gitignore` 대상(로컬 전용 산출물)이다.
 
 ---
 

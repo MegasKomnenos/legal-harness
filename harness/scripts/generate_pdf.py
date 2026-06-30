@@ -13,7 +13,9 @@ Usage:
   - 말미 YYYY. M. D. + 서명 + 귀중/귀하: 서명·수신
 
 서식: harness/quality/PDF_서식.md 확정 사양
-엔진: WeasyPrint 66+, Noto Serif CJK KR
+엔진: WeasyPrint(GTK) → Playwright(시스템 Chromium) 폴백, Noto Serif CJK KR
+  WeasyPrint는 GTK 런타임 의존. GTK가 없는 환경(예: Windows)에서는
+  Playwright가 시스템 Edge/Chrome을 띄워 동일 HTML/CSS를 렌더링한다.
 """
 import sys
 import re
@@ -299,6 +301,76 @@ def render(title, subtitle, hdrs, body, foot):
     return '\n'.join(o)
 
 
+def write_pdf(html_str, out):
+    """PDF 변환 엔진 폴백 체인.
+
+    1차 WeasyPrint(GTK 의존) → 실패 시 2차 Playwright(시스템 Chromium).
+    GTK 런타임이 없는 환경에서도 시스템 Edge/Chrome으로 동일 HTML/CSS를
+    렌더링하여 서식을 재현한다. 반환값은 사용된 엔진 이름.
+    """
+    try:
+        from weasyprint import HTML
+        HTML(string=html_str).write_pdf(str(out))
+        return 'weasyprint'
+    except Exception as weasy_err:
+        try:
+            _write_pdf_playwright(html_str, out)
+            return 'playwright(chromium)'
+        except Exception as pw_err:
+            raise RuntimeError(
+                'PDF 변환 실패. 두 엔진 모두 사용할 수 없습니다.\n'
+                f'  - WeasyPrint: {weasy_err}\n'
+                f'  - Playwright: {pw_err}\n'
+                'WeasyPrint는 GTK 런타임(libgobject 등)이, '
+                'Playwright는 playwright 패키지와 시스템 Edge/Chrome이 필요합니다.'
+            ) from pw_err
+
+
+def _write_pdf_playwright(html_str, out):
+    """Playwright로 시스템 Chromium(Edge→Chrome)을 띄워 HTML→PDF 변환.
+
+    페이지번호 '- N -'는 CSS @bottom-center를 Chromium이 지원하지 않으므로
+    page.pdf의 footer_template으로 재현한다. 여백은 PDF_서식.md 확정 사양
+    (좌·우·상 25mm, 하 15mm)을 page.pdf margin으로 적용한다(CSS @page는
+    prefer_css_page_size=False로 무시).
+    """
+    from playwright.sync_api import sync_playwright
+
+    footer = (
+        '<div style="width:100%; text-align:center; '
+        "font-family:'Noto Serif CJK KR', serif; font-size:9pt; "
+        'margin:0;">- <span class="pageNumber"></span> -</div>'
+    )
+    with sync_playwright() as p:
+        browser = None
+        launch_err = None
+        for channel in ('msedge', 'chrome'):
+            try:
+                browser = p.chromium.launch(channel=channel)
+                break
+            except Exception as e:
+                launch_err = e
+        if browser is None:
+            raise RuntimeError(
+                f'시스템 Chromium(Edge/Chrome) 실행 실패: {launch_err}')
+        try:
+            page = browser.new_page()
+            page.set_content(html_str, wait_until='networkidle')
+            page.pdf(
+                path=str(out),
+                format='A4',
+                margin={'top': '25mm', 'bottom': '15mm',
+                        'left': '25mm', 'right': '25mm'},
+                display_header_footer=True,
+                header_template='<div></div>',
+                footer_template=footer,
+                print_background=True,
+                prefer_css_page_size=False,
+            )
+        finally:
+            browser.close()
+
+
 def main():
     if len(sys.argv) < 2:
         print(f'Usage: {sys.argv[0]} <입력.txt> [출력.pdf | --html]',
@@ -325,9 +397,8 @@ def main():
     if out is None:
         out = inp.with_suffix('.pdf')
 
-    from weasyprint import HTML
-    HTML(string=html_str).write_pdf(str(out))
-    print(f'PDF 생성: {out}')
+    engine = write_pdf(html_str, out)
+    print(f'PDF 생성: {out} (engine: {engine})')
 
 
 if __name__ == '__main__':
