@@ -35,6 +35,31 @@ def is_legal_document(text):
     return count >= 2
 
 
+WRITING_DIRS = ('작성_최종', '작성_초안')
+
+
+def in_writing_dir(normalized_path):
+    """cases/ 아래 작성_최종/작성_초안 경로인지 판정 (정규화된 경로)."""
+    if '/cases/' not in normalized_path and not normalized_path.startswith('cases/'):
+        return False
+    return any(f'/{d}/' in normalized_path for d in WRITING_DIRS)
+
+
+def has_harness_pair(file_path):
+    """동일 사건 폴더(상위 3단계)에 진행로그/검증이력이 있으면 하네스 생성물로
+    간주한다. 없으면 기존 원본 문서로 보고 검증에서 제외한다."""
+    directory = os.path.dirname(os.path.abspath(file_path))
+    for _ in range(3):
+        if (glob.glob(os.path.join(directory, '진행로그_*.md')) or
+                glob.glob(os.path.join(directory, '검증이력_*.md'))):
+            return True
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            break
+        directory = parent
+    return False
+
+
 def get_line_number(text, position):
     return text[:position].count('\n') + 1
 
@@ -226,6 +251,10 @@ def main():
             if ext.lower() not in ('.txt', '.typ'):
                 sys.exit(0)
             if any(s in n for s in ['/harness/', '/.claude/', '/scripts/']):
+                sys.exit(0)
+            if not in_writing_dir(n):
+                sys.exit(0)
+            if not has_harness_pair(fp):
                 sys.exit(0)
             target_from_stdin = fp
     except (json.JSONDecodeError, KeyError, TypeError):

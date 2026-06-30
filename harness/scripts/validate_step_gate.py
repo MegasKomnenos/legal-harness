@@ -51,6 +51,16 @@ def is_legal_document(file_path):
     return count >= 2
 
 
+WRITING_DIRS = ('작성_최종', '작성_초안')
+
+
+def in_writing_dir(normalized_path):
+    """cases/ 아래 작성_최종/작성_초안 경로인지 판정 (정규화된 경로)."""
+    if '/cases/' not in normalized_path and not normalized_path.startswith('cases/'):
+        return False
+    return any(f'/{d}/' in normalized_path for d in WRITING_DIRS)
+
+
 def parse_completed_steps(log_path):
     try:
         with open(log_path, 'r', encoding='utf-8') as f:
@@ -140,7 +150,7 @@ def main():
             sys.exit(2)
         sys.exit(0)
 
-    # 3. 법률 문서: 1~7단계 완료 필요
+    # 3. 법률 문서: 작성_최종/작성_초안의 하네스 생성물만, 1~7단계 완료 필요
     _, ext = os.path.splitext(file_path)
     if ext.lower() not in ('.txt', '.typ'):
         sys.exit(0)
@@ -148,18 +158,16 @@ def main():
     if any(skip in basename for skip in SKIP_BASENAMES):
         sys.exit(0)
 
+    if not in_writing_dir(normalized):
+        sys.exit(0)
+
     if not is_legal_document(file_path):
         sys.exit(0)
 
     log_path = find_progress_log(file_path)
     if not log_path:
-        print(
-            '[단계 게이트] 진행 로그가 없습니다. '
-            '문서 작성 전에 1~7단계를 수행하고 '
-            '진행로그_{문서명}.md에 각 단계 완료를 기록하십시오.',
-            file=sys.stderr
-        )
-        sys.exit(2)
+        # 진행 로그가 없으면 기존 원본 문서로 간주하고 게이트하지 않는다.
+        sys.exit(0)
     steps = parse_completed_steps(log_path)
     required = {1, 2, 3, 4, 5, 6, 7}
     missing = required - steps
