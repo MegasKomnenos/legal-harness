@@ -86,10 +86,7 @@ def find_legal_doc(graph_path):
     if parent != doc_dir:
         search_dirs.append(parent)
     for d in search_dirs:
-        candidates = (
-            glob.glob(os.path.join(d, '**', '*.txt'), recursive=True) +
-            glob.glob(os.path.join(d, '**', '*.typ'), recursive=True)
-        )
+        candidates = glob.glob(os.path.join(d, '**', '*.txt'), recursive=True)
         for p in candidates:
             n = os.path.normpath(p).replace('\\', '/')
             if any(s in n for s in ['/harness/', '/.claude/', '/scripts/']):
@@ -287,7 +284,7 @@ def main():
         result = validate(graph_data, '', valid_codes, file_path)
     else:
         _, ext = os.path.splitext(file_path)
-        if ext.lower() not in ('.txt', '.typ'):
+        if ext.lower() not in ('.txt',):
             sys.exit(0)
         graph_path = find_graph_file(file_path)
         if not graph_path:

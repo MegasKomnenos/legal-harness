@@ -20,10 +20,10 @@ Extracted text goes to stdout. Progress/errors go to stderr.
 
 ```bash
 # Single file
-python extract_all.py "법령_판례/판례/대법원_2003두8050.pdf"
+python extract_all.py "법령_판례/archive/판례/대법원_2003두8050.pdf"
 
 # Multiple files
-python extract_all.py "cases/01_공사소음/절차_정보공개/*.pdf" "법령_판례/경북대_내규/*.pdf"
+python extract_all.py "cases/02_대동제/절차_04_2차심판_2026-10986/피청구인_증거/*.pdf" "법령_판례/archive/경북대_내규/*.pdf"
 ```
 
 ## Methods

@@ -2,7 +2,9 @@ const { spawn } = require('child_process');
 const readline = require('readline');
 const path = require('path');
 
-const CLAUDE_BIN = '/home/scouter/.local/bin/claude';
+// PATH에서 claude 실행 파일을 찾는다. 환경별 경로는 CLAUDE_BIN 환경변수로 덮어쓸 수 있다.
+// (Windows에서 claude.cmd 해석이 필요하면 CLAUDE_BIN에 절대 경로를 지정하거나 spawn 옵션에 shell:true를 둔다.)
+const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
 const PROJECT_DIR = path.resolve(__dirname, '..', '..');
 
 class ClaudeBridge {

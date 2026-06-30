@@ -66,7 +66,7 @@ def get_line_number(text, position):
 
 def find_target_file(project_dir):
     candidates = []
-    for ext in ('*.txt', '*.typ'):
+    for ext in ('*.txt',):
         for fpath in glob.glob(os.path.join(project_dir, '**', ext), recursive=True):
             n = os.path.normpath(fpath).replace('\\', '/')
             if any(s in n for s in ['/harness/', '/output/', '/.claude/', '/scripts/']):
@@ -248,7 +248,7 @@ def main():
             fp = data.get('tool_input', {}).get('file_path', '')
             _, ext = os.path.splitext(fp)
             n = os.path.normpath(fp).replace('\\', '/')
-            if ext.lower() not in ('.txt', '.typ'):
+            if ext.lower() not in ('.txt',):
                 sys.exit(0)
             if any(s in n for s in ['/harness/', '/.claude/', '/scripts/']):
                 sys.exit(0)

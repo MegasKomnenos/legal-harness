@@ -6,7 +6,7 @@
 [![English](https://img.shields.io/badge/lang-English-blue)](#)
 
 A Claude Code harness and skill for systematic generation of Korean administrative law documents.
-Includes 37 legal doctrines, 27 case citations, and 6 document templates extracted from 3 real administrative adjudication cases, with a 10-step pipeline and 2-phase automated quality verification (PostToolUse hooks).
+Includes 37 legal doctrines, 27 case-law and adjudication citations, and 6 document templates extracted from 3 real administrative adjudication cases, with a 10-step pipeline and 2-phase automated quality verification (PostToolUse hooks).
 
 ## Overview
 
@@ -19,7 +19,7 @@ flowchart LR
     E --> F["6. Doctrine\nConnection Graph"]
     F --> G["7. Graph\nVerification Loop"]
     G --> H["8. Generate\nDocument"]
-    H --> I["9. 3-Layer\nIterative QA"]
+    H --> I["9. 2-Phase\nIterative QA"]
     I --> J["10. PDF\nOutput"]
     I -.->|Fail| H
     G -.->|Fail| F
@@ -40,7 +40,7 @@ Generates legal documents via the `/legal-harness [case] [type]` command in Clau
 | Path | Contents |
 |------|----------|
 | `data/법리_데이터베이스.md` | 37 legal doctrines (ID, case law, holdings, argument structure, application examples) |
-| `data/판례_인용_사전.md` | 27 case citations with exact citation format and original holdings |
+| `data/판례_인용_사전.md` | 27 case-law and adjudication citations with exact citation format and original holdings (26 cases, 1 adjudication) |
 | `data/법조문_인용_사전.md` | Statute text verbatim (for citation cross-checking) |
 | `style/문서_구조_템플릿.md` | 6 document type templates with outline, numbering, and section rules |
 | `style/표현_사전.md` | 16-category standardized expression patterns |
@@ -90,7 +90,7 @@ legal-case-harness/
 |------|------|-----------|--------|
 | Construction Noise (공사소음) | Construction noise/fugitive dust FOIA | KNU Facilities Division | Adjudication in progress |
 | Festival Outsourcing (대동제) | Festival vendor contract FOIA | KNU Student Affairs Division | Adjudication in progress |
-| Sexual Harassment (성희롱) | Group chat harassment FOIA | KNU Human Rights Center | Adjudication in progress |
+| Sexual Harassment (성희롱) | Group chat harassment FOIA | KNU Human Rights Center & Student Affairs | Adjudication in progress |
 
 All case documents are anonymized with personal information removed.
 
@@ -138,8 +138,8 @@ All case documents are anonymized with personal information removed.
 `extract_all.py` extracts text from a given file and prints to stdout.
 
 ```bash
-python extract_all.py "법령_판례/판례/대법원_2003두8050.pdf"
-python extract_all.py "법령_판례/경북대_내규/경북대학교_학칙(규정_제2856호).pdf"
+python extract_all.py "법령_판례/archive/판례/대법원_2003두8050.pdf"
+python extract_all.py "법령_판례/archive/경북대_내규/경북대학교_학칙(규정_제2856호).pdf"
 ```
 
 ### Dependencies

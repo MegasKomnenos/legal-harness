@@ -152,7 +152,7 @@ def main():
 
     # 3. 법률 문서: 작성_최종/작성_초안의 하네스 생성물만, 1~7단계 완료 필요
     _, ext = os.path.splitext(file_path)
-    if ext.lower() not in ('.txt', '.typ'):
+    if ext.lower() not in ('.txt',):
         sys.exit(0)
 
     if any(skip in basename for skip in SKIP_BASENAMES):
