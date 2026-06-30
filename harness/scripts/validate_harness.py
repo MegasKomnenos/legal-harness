@@ -132,6 +132,34 @@ def check_extract_skill(proj):
     return issues
 
 
+def check_usage_file_refs(proj):
+    """판례사전·법리DB의 사용처/적용 사례가 적은 .txt 파일명이 cases/ 아래 실재하는지.
+
+    디렉토리 재구조화·파일명 변경 후 추적 메타데이터가 옛 파일명(예: 대동제_원본.txt,
+    성희롱_최종.txt)을 가리키는 드리프트를 탐지한다. 사용처는 '사건 문서유형 항번호'의
+    서술 참조를 원칙으로 하며, 구체적 `*.txt` 파일명을 적을 경우 그 파일이 실재하여야 한다.
+    """
+    issues = []
+    case_files = set()
+    for fp in glob.glob(os.path.join(proj, 'cases', '**', '*.txt'), recursive=True):
+        case_files.add(os.path.basename(fp))
+    ref_re = re.compile(r'([^\s,]+\.txt)')
+    targets = [
+        ('판례_인용_사전.md', '사용처'),
+        ('법리_데이터베이스.md', '적용 사례'),
+    ]
+    for fname, marker in targets:
+        text = read(os.path.join(proj, 'harness', 'data', fname))
+        for line in text.split('\n'):
+            if marker not in line:
+                continue
+            for m in ref_re.finditer(line):
+                base = os.path.basename(m.group(1).replace('\\', '/'))
+                if base not in case_files:
+                    issues.append(f'{fname}: 사용처의 미실재 .txt 참조: {m.group(1)}')
+    return issues
+
+
 CHECKS = [
     ('Phase 2 파싱(§17·§18 포함)', check_phase2_parsing),
     ('판례 사전 ↔ 판례 파일', check_case_dict_vs_files),
@@ -139,6 +167,7 @@ CHECKS = [
     ('법리DB 판례 ↔ 인용사전', check_doctrine_cases),
     ('README harness 경로 실재', check_readme_harness_paths),
     ('extract SKILL OCR ↔ 코드', check_extract_skill),
+    ('사용처 .txt 파일 실재', check_usage_file_refs),
 ]
 
 
