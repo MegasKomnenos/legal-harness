@@ -64,18 +64,19 @@ h3 {
 }
 p {
   margin: 0 0 11pt 0;
-  text-indent: 0;
+  text-indent: 1em;
   line-height: 2.0;
   orphans: 2;
   widows: 2;
 }
 .sub {
   text-align: center;
+  text-indent: 0;
   margin: 0 0 11pt 0;
   font-size: 11pt;
 }
-.i1 { margin-left: 10mm; }
-.i2 { margin-left: 20mm; }
+.i1 { margin-left: 10mm; text-indent: 0; }
+.i2 { margin-left: 20mm; text-indent: 0; }
 table.hdr {
   margin-bottom: 22pt;
   border-collapse: collapse;
@@ -96,6 +97,7 @@ table.hdr .l {
 }
 .foot p {
   text-align: right;
+  text-indent: 0;
   margin: 0;
   line-height: 1.8;
 }
