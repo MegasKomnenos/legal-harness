@@ -3,7 +3,8 @@
 
 Usage:
     python generate_pdf.py <입력.txt> [출력.pdf]
-    python generate_pdf.py <입력.txt> --html   # 중간 HTML 확인
+    python generate_pdf.py <입력.txt> --html     # 중간 HTML 확인
+    python generate_pdf.py <입력.txt> --verify   # 생성 후 PDF 자동 점검
 
 입력 파일 규약:
   - 첫 비공란 행: 문서 제목 (18pt Bold 중앙정렬)
@@ -373,9 +374,37 @@ def _write_pdf_playwright(html_str, out):
             browser.close()
 
 
+def verify_pdf(out, title=None):
+    """생성된 PDF를 PyMuPDF(fitz)로 열어 자동 점검한다.
+
+    시각 검증이 막힌 환경(poppler 부재로 PDF→이미지 렌더 불가, Playwright
+    MCP의 file: 프로토콜 차단)에서, 정확성의 본체가 담긴 표현·텍스트 층을
+    점검한다. 점검 항목: (1) 페이지가 1쪽 이상 존재, (2) 각 페이지에
+    페이지번호 footer '- N -'가 존재, (3) 제목이 첫 페이지에 존재.
+    반환: 문제 목록(빈 리스트면 통과). PyMuPDF 미설치면 None(생략).
+    """
+    try:
+        import fitz
+    except ImportError:
+        return None
+    issues = []
+    with fitz.open(str(out)) as doc:
+        n = doc.page_count
+        if n == 0:
+            return ['PDF에 페이지가 없습니다']
+        missing = [i + 1 for i in range(n) if f'- {i + 1} -' not in doc[i].get_text()]
+        if missing:
+            issues.append(f'페이지번호 footer "- N -" 누락: {missing}쪽')
+        if title:
+            head = title.split()[0]
+            if head and head not in doc[0].get_text():
+                issues.append(f'첫 페이지에서 제목 미검출: {title!r}')
+    return issues
+
+
 def main():
     if len(sys.argv) < 2:
-        print(f'Usage: {sys.argv[0]} <입력.txt> [출력.pdf | --html]',
+        print(f'Usage: {sys.argv[0]} <입력.txt> [출력.pdf | --html | --verify]',
               file=sys.stderr)
         sys.exit(1)
 
@@ -393,7 +422,7 @@ def main():
 
     out = None
     for a in sys.argv[2:]:
-        if a != '--html':
+        if a not in ('--html', '--verify'):
             out = Path(a)
             break
     if out is None:
@@ -401,6 +430,18 @@ def main():
 
     engine = write_pdf(html_str, out)
     print(f'PDF 생성: {out} (engine: {engine})')
+
+    if '--verify' in sys.argv:
+        result = verify_pdf(out, title)
+        if result is None:
+            print('[검증 생략] PyMuPDF(fitz) 미설치')
+        elif result:
+            print('[검증 실패]', file=sys.stderr)
+            for it in result:
+                print(f'  - {it}', file=sys.stderr)
+            sys.exit(1)
+        else:
+            print('[검증 통과] 페이지번호 footer·제목 확인')
 
 
 if __name__ == '__main__':

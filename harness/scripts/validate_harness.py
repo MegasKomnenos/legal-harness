@@ -160,6 +160,44 @@ def check_usage_file_refs(proj):
     return issues
 
 
+def check_readme_step_item_counts(proj):
+    """README(ko/en)가 언급한 파이프라인 단계 수·체크리스트 항목 수가 정본과 일치하는지.
+
+    정본: 단계 수 = legal-workbench/public/app.js의 STEPS 최대 step,
+          항목 수 = harness/quality/검증_체크리스트.md의 최대 절 번호(## N.).
+    M-0016의 자기서술 드리프트(README '10단계'가 실제 11, '18항목'이 실제 19) 재발 방지.
+    정본이 기계 판독 가능한 수치만 대조하고, 의미·서술 정합은 통독의 몫으로 남긴다.
+    """
+    issues = []
+    cl = read(os.path.join(proj, 'harness', 'quality', '검증_체크리스트.md'))
+    sec_nums = [int(m) for m in re.findall(r'^##\s+(\d+)\.', cl, re.MULTILINE)]
+    canon_items = max(sec_nums) if sec_nums else None
+    appjs = read(os.path.join(proj, 'legal-workbench', 'public', 'app.js'))
+    step_nums = [int(m) for m in re.findall(r'step:\s*(\d+)', appjs)]
+    canon_steps = max(step_nums) if step_nums else None
+
+    for rm in ('README.md', 'README.en.md'):
+        text = read(os.path.join(proj, rm))
+        if not text:
+            continue
+        if canon_steps:
+            for m in re.findall(r'(\d+)\s*단계', text) + re.findall(r'(\d+)-step', text):
+                if int(m) != canon_steps:
+                    issues.append(
+                        f'{rm}: 파이프라인 단계 수 "{m}"이 정본 {canon_steps}(app.js STEPS)과 불일치')
+        if canon_items:
+            # 'category'는 표현_사전(16종) 등 다른 대상도 가리키므로,
+            # 'checklist'가 결합된 경우만 체크리스트 항목 수로 본다(D-0007: 의미는 문맥에 있다).
+            found = (re.findall(r'(\d+)\s*항목', text)
+                     + re.findall(r'(\d+)[\s-]checklist categor', text)
+                     + re.findall(r'(\d+)-category quality checklist', text))
+            for m in found:
+                if int(m) != canon_items:
+                    issues.append(
+                        f'{rm}: 체크리스트 항목 수 "{m}"이 정본 {canon_items}(검증_체크리스트 §)과 불일치')
+    return issues
+
+
 CHECKS = [
     ('Phase 2 파싱(§17·§18 포함)', check_phase2_parsing),
     ('판례 사전 ↔ 판례 파일', check_case_dict_vs_files),
@@ -168,6 +206,7 @@ CHECKS = [
     ('README harness 경로 실재', check_readme_harness_paths),
     ('extract SKILL OCR ↔ 코드', check_extract_skill),
     ('사용처 .txt 파일 실재', check_usage_file_refs),
+    ('README 단계·항목 수 ↔ 정본', check_readme_step_item_counts),
 ]
 
 
