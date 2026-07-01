@@ -6,7 +6,7 @@
 [![English](https://img.shields.io/badge/lang-English-blue)](#)
 
 A Claude Code harness and skill for systematic generation of Korean administrative law documents.
-Includes 37 legal doctrines, 27 case-law and adjudication citations, and 6 document templates extracted from 3 real administrative adjudication cases, with a 10-step pipeline and 2-phase automated quality verification (PostToolUse hooks).
+Includes 37 legal doctrines, 27 case-law and adjudication citations, and 6 document templates extracted from 3 real administrative adjudication cases, with an 11-step pipeline and 2-phase automated quality verification (PostToolUse hooks).
 
 ## Overview
 
@@ -21,6 +21,7 @@ flowchart LR
     G --> H["8. Generate\nDocument"]
     H --> I["9. 2-Phase\nIterative QA"]
     I --> J["10. PDF\nOutput"]
+    J --> K["11. Cleanup\n& Archive"]
     I -.->|Fail| H
     G -.->|Fail| F
 ```
@@ -31,9 +32,9 @@ flowchart LR
 
 Generates legal documents via the `/legal-harness [case] [type]` command in Claude Code.
 
-- 10-step generation pipeline (see Overview)
+- 11-step generation pipeline (see Overview)
 - Full-text loading principle: all case law and statutes are loaded in full, not as snippets
-- 2-phase iterative quality verification: repeats until all 18 checklist categories pass (Phase 1 mechanical checks + Phase 2 subagent evaluation)
+- 2-phase iterative quality verification: repeats until all 19 checklist categories pass (Phase 1 mechanical checks + Phase 2 subagent evaluation)
 
 ### `harness/` -- Reference Harness
 
@@ -45,10 +46,10 @@ Generates legal documents via the `/legal-harness [case] [type]` command in Clau
 | `style/문서_구조_템플릿.md` | 6 document type templates with outline, numbering, and section rules |
 | `style/표현_사전.md` | 16-category standardized expression patterns |
 | `style/논증_가이드라인.md` | Argumentation error examples and corrections |
-| `quality/검증_체크리스트.md` | 18-category quality checklist (Phase 1/2) |
+| `quality/검증_체크리스트.md` | 19-category quality checklist (Phase 1/2) |
 | `quality/PDF_서식.md` | PDF output spec (A4, Noto Serif CJK KR) |
 | `scripts/validate_*.py` | Validation scripts (step gate, graph/doc Phase 1/2) |
-| `scripts/generate_pdf.py` | txt-to-PDF conversion (WeasyPrint) |
+| `scripts/generate_pdf.py` | txt-to-PDF conversion (WeasyPrint with Playwright fallback) |
 | `디렉토리_지도.md` | Full directory map and per-case document classification |
 | `관리_절차.md` | Case-law/case addition and harness modification procedure |
 
@@ -59,6 +60,13 @@ Extracts text from PDF, HWP, DOCX, images, audio, and video files.
 - 7 extraction methods: direct text read, PDF text layer, OCR, HWP conversion, DOCX XML parsing, STT, video frame OCR
 - Per-page PDF classification logic: auto-detects text, image, and vector pages
 
+### `.claude/skills/memory-harness/` -- Working Memory Harness
+
+Crystallizes soon-to-be-lost work context into a memory node committed alongside each git commit, and synthesizes accumulated memory into insights and conventions via the dream procedure.
+
+- Two-layer graph: layer-1 memory nodes (one per work commit) + layer-2 dream nodes (synthesized insights)
+- Constitution/bylaw architecture: core layer (minimal contract) and mutable layer (evolved autonomously by dream)
+
 ## Directory Structure
 
 ```
@@ -68,7 +76,8 @@ legal-case-harness/
 │   ├── settings.json
 │   └── skills/
 │       ├── extract-documents/  # Document extraction skill
-│       └── legal-harness/      # Legal document generation skill
+│       ├── legal-harness/      # Legal document generation skill
+│       └── memory-harness/     # Working memory & dream skill
 ├── harness/                    # Reference harness
 ├── extract_all.py              # Document extraction script
 ├── cases/                      # Case documents (anonymized)
