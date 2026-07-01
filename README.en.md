@@ -143,6 +143,8 @@ All case documents are anonymized with personal information removed.
 | Administrative adjudication brief (행정심판 청구이유서) | PDF |
 | Supplementary brief (보충서면) | PDF |
 
+> There are 6 outline templates (`style/문서_구조_템플릿.md`); the FOIA request body is generated from `style/표현_사전.md` without a separate outline template, hence 7 supported types.
+
 ## Document Extraction Tool
 
 `extract_all.py` extracts text from a given file and prints to stdout.
