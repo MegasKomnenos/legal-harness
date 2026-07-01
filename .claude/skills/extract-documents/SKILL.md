@@ -44,7 +44,7 @@ Each PDF page is classified independently:
 
 1. **Text > 50 chars** → use text layer. Additionally, any embedded image > 500K pixels that covers < 80% of page area gets supplementary OCR (catches charts/diagrams alongside text).
 2. **Text ≤ 50 chars + image > 160K pixels** → extract image, OCR it.
-3. **Text ≤ 50 chars + drawings > 100** → render page at 450dpi, OCR the rendered image (for vector-path PDFs like Gmail printouts). Full-page scan pages are rendered at 300dpi.
+3. **Text ≤ 50 chars + drawings > 100** → render page at 600dpi and OCR with Tesseract psm 6 (single uniform block; avoids the column mis-segmentation that the default psm 3 causes on multi-column web captures), for vector-path PDFs like Gmail/CaseNote printouts. Full-page scan pages are rendered at 300dpi (psm 4).
 4. **Otherwise** → empty page (section dividers, page numbers).
 
 ## Dependencies

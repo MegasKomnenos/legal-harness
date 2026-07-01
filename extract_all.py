@@ -269,10 +269,15 @@ def extract_pdf(path):
                 methods_used.add("pdf_text")
 
         elif len(drawings) > 100:
-            pix = page.get_pixmap(dpi=450)
+            # 텍스트 레이어 없이 글자를 벡터 path로 그린 PDF(CaseNote 등 웹 출력물).
+            # 텍스트가 거의 0이라 위 조건들을 통과하지 못하고 이 분기로 온다.
+            # dpi 600 + psm 6: 판시 요약란 같은 다단·박스 레이아웃에서 기본 psm 3(자동)은
+            # 컬럼을 오분할해 문장을 파편화하므로, 단일 균일 블록(psm 6)으로 읽는다
+            # (예: 2020두31408에서 psm 3은 파편, psm 6은 온전한 문장).
+            pix = page.get_pixmap(dpi=600)
             tmp_path = SCRATCH_DIR / f"render_p{i+1}.png"
             pix.save(str(tmp_path))
-            ocr_text = ocr_image_file(tmp_path)
+            ocr_text = ocr_image_file(tmp_path, psm=6)
             tmp_path.unlink(missing_ok=True)
             if ocr_text.strip():
                 all_text.append(f"--- 페이지 {i+1} (벡터 렌더링 OCR) ---\n{ocr_text}")
