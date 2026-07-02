@@ -32,7 +32,7 @@ python extract_all.py "cases/02_대동제/절차_04_2차심판_2026-10986/피청
 |---|--------|------|---------|
 | 1 | Direct text read | `open().read()` | `.txt`, `.md` |
 | 2 | PDF text layer | PyMuPDF `page.get_text()` | `.pdf` with text layer |
-| 3 | Image OCR | Tesseract (pytesseract, `lang="kor+eng"`) | `.png`, `.jpg`, image-only PDF pages, vector-drawing PDF pages (rendered at 450dpi), chart/diagram images inside text-layer pages |
+| 3 | Image OCR | Tesseract (pytesseract, `lang="kor+eng"`) | `.png`, `.jpg`, image-only PDF pages, vector-drawing PDF pages (rendered at 600dpi), chart/diagram images inside text-layer pages |
 | 4 | HWP conversion | `hwp5html` → strip HTML tags | `.hwp` |
 | 5 | DOCX XML parsing | `zipfile` → `w:t` tags | `.docx` |
 | 6 | Speech-to-text | faster-whisper (`base`, `ko`) | `.m4a`, `.mp4` audio track |
